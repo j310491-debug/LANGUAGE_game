@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>語文拼圖大師</title>
+    <style>
+        /* 整體介面設定 */
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            background-color: #fdf5e6; /* 溫和的米白色背景 */
+            margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100dvh; box-sizing: border-box;
+            touch-action: manipulation; user-select: none;
+        }
+
+        #game-container {
+            width: 100%; max-width: 700px; height: 100%;
+            background-color: #ffffff; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 20px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 15px;
+            position: relative; overflow: hidden;
+        }
+
+        /* 頂部進度與音效啟動 */
+        #header {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 1.5rem; font-weight: bold; color: #555;
+            padding-bottom: 10px; border-bottom: 2px dashed #e0e0e0;
+        }
+        #sound-init-btn {
+            background-color: #e3f2fd; color: #1565c0; border: 2px solid #90caf9;
+            padding: 5px 15px; border-radius: 20px; cursor: pointer;
+            font-size: 1.2rem; font-weight: bold;
+        }
+
+        /* 圖片與語音區 */
+        #image-area {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background-color: #fff8e1; border-radius: 15px; padding: 20px;
+            border: 4px solid #ffe082; min-height: 150px; position: relative;
+        }
+        #picture-display {
+            font-size: 6rem; /* 暫時用大字體顯示 Emoji，未來可換成 img */
+            margin-bottom: 10px; text-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        /* 語音按鈕 */
+        #speak-btn {
+            position: absolute; top: 15px; right: 15px;
+            width: 50px; height: 50px; border-radius: 50%;
+            background-color: #4caf50; color: white; border: none;
+            font-size: 1.8rem; cursor: pointer; box-shadow: 0 4px 0 #388e3c;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.1s;
+        }
+        #speak-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #388e3c; }
+
+        /* 空格區 (作答區) */
+        #slots-area {
+            display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;
+            padding: 15px 0; min-height: 80px;
+        }
+        .slot {
+            height: 60px; min-width: 80px; padding: 0 15px;
+            background-color: #f5f5f5; border: 3px dashed #bdbdbd; border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; font-weight: bold; color: #1565c0;
+            cursor: pointer; transition: 0.2s;
+        }
+        .slot.filled {
+            background-color: #e3f2fd; border-style: solid; border-color: #64b5f6;
+            box-shadow: 0 4px 0 #90caf9; transform: translateY(-2px);
+        }
+
+        /* 卡片區 (選項區) */
+        #cards-area {
+            flex: 1; display: flex; justify-content: center; align-content: flex-start; flex-wrap: wrap; gap: 15px;
+            background-color: #f9fbe7; border-radius: 15px; padding: 20px;
+            border: 4px solid #dce775;
+        }
+        .word-card {
+            height: 60px; padding: 0 20px;
+            background-color: #ffffff; border: 3px solid #cddc39; border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; font-weight: bold; color: #33691e;
+            cursor: pointer; box-shadow: 0 5px 0 #afb42b; transition: 0.1s;
+        }
+        .word-card:active { transform: translateY(5px); box-shadow: 0 0 0 #afb42b; }
+        .word-card.hidden { visibility: hidden; pointer-events: none; }
+
+        /* 回饋視覺動畫 */
+        #feedback-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; justify-content: center; align-items: center; flex-direction: column;
+            z-index: 100; font-size: 6rem; background-color: rgba(255,255,255,0.95);
+            font-weight: bold; color: #4caf50; text-align: center;
+        }
+
+        .shake-error { animation: shake 0.4s; border-color: #f44336 !important; }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-10px);} 75% {transform: translateX(10px);} }
+
+        @media (max-width: 400px) {
+            #picture-display { font-size: 4.5rem; }
+            .slot, .word-card { font-size: 1.4rem; height: 50px; padding: 0 10px; }
+            #speak-btn { width: 45px; height: 45px; font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- 頂部資訊 -->
+        <div id="header">
+            <div>題數: <span id="progress-text">1 / 11</span></div>
+            <button id="sound-init-btn" onclick="initAudio()">🔊 點此開啟音效</button>
+        </div>
+
+        <!-- 圖片與語音區 -->
+        <div id="image-area">
+            <button id="speak-btn" onclick="readSentence()">🔊</button>
+            <div id="picture-display">🍉</div>
+        </div>
+
+        <!-- 拼圖空格區 -->
+        <div id="slots-area"></div>
+
+        <!-- 拆散的字卡區 -->
+        <div id="cards-area"></div>
+
+        <!-- 結果回饋 -->
+        <div id="feedback-overlay"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 老師出題區：將 11 題句子拆解成陣列
+        // ==========================================
+        const questionBank = [
+            // 第一頁
+            { img: "🍉", parts: ["這裡有", "一個", "綠色的", "西瓜"] },
+            { img: "🍌🍌", parts: ["這裡有", "兩根", "黃色的", "香蕉"] },
+            { img: "🍓🍓🍓", parts: ["這裡有", "三顆", "紅色的", "草莓"] },
+            // 第二頁
+            { img: "🍇", parts: ["這裡有", "四串", "紫色的", "葡萄"] },
+            { img: "🥚", parts: ["這裡有", "五個", "褐色的", "雞蛋"] },
+            // 第三頁
+            { img: "👩‍🏫🏫", parts: ["老師", "在教室", "上課"] },
+            { img: "👨‍⚕️🏥", parts: ["醫生", "在醫院", "治病"] },
+            { img: "👨‍🍳🍳", parts: ["廚師", "在廚房", "炒菜"] },
+            // 第四頁
+            { img: "👧🤸‍♀️", parts: ["姊姊", "在草地", "跳繩"] },
+            { img: "👩🍽️", parts: ["阿姨", "在餐桌旁", "吃飯"] },
+            { img: "👧🚰", parts: ["女孩", "在洗手檯旁", "洗手"] }
+        ];
+
+        // 系統變數
+        let currentQuestionIndex = 0;
+        let currentQ = null;
+        let shuffledCards = [];
+        let filledSlots = []; // 紀錄空格裡放了哪些卡片的 index
+
+        const progressText = document.getElementById('progress-text');
+        const pictureDisplay = document.getElementById('picture-display');
+        const slotsArea = document.getElementById('slots-area');
+        const cardsArea = document.getElementById('cards-area');
+        const feedbackOverlay = document.getElementById('feedback-overlay');
+        const soundInitBtn = document.getElementById('sound-init-btn');
+
+        // ==========================================
+        // 音效與語音朗讀系統
+        // ==========================================
+        let audioCtx = null;
+        let ttsUtterance = null;
+        
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                soundInitBtn.innerText = "音效已開啟";
+                soundInitBtn.style.backgroundColor = "#e8f5e9";
+                soundInitBtn.style.borderColor = "#4caf50";
+                soundInitBtn.style.color = "#2e7d32";
+                playSound('beep');
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); 
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2); 
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'beep') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            }
+        }
+
+        function readSentence() {
+            if (!currentQ) return;
+            const fullSentence = currentQ.parts.join("，"); // 加入逗號讓語音稍微停頓，聽起來更自然
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                ttsUtterance = new SpeechSynthesisUtterance(fullSentence);
+                ttsUtterance.lang = 'zh-TW';
+                ttsUtterance.rate = 0.85; // 稍微放慢速度適合幼兒
+                window.speechSynthesis.speak(ttsUtterance);
+            }
+        }
+
+        // ==========================================
+        // 遊戲主邏輯
+        // ==========================================
+        function loadQuestion() {
+            feedbackOverlay.style.display = 'none';
+            slotsArea.classList.remove('shake-error');
+            
+            currentQ = questionBank[currentQuestionIndex];
+            progressText.innerText = `${currentQuestionIndex + 1} / ${questionBank.length}`;
+            pictureDisplay.innerText = currentQ.img;
+            
+            // 建立空格 (數量等於句子拆解的數量)
+            filledSlots = new Array(currentQ.parts.length).fill(null);
+            slotsArea.innerHTML = '';
+            for (let i = 0; i < currentQ.parts.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.id = `slot-${i}`;
+                slot.onclick = () => removeCardFromSlot(i);
+                slotsArea.appendChild(slot);
+            }
+
+            // 建立並打亂字卡
+            shuffledCards = currentQ.parts.map((text, index) => ({ text, originalIndex: index }));
+            shuffledCards.sort(() => Math.random() - 0.5);
+
+            cardsArea.innerHTML = '';
+            shuffledCards.forEach((card, index) => {
+                const cardBtn = document.createElement('button');
+                cardBtn.className = 'word-card';
+                cardBtn.id = `card-${index}`;
+                cardBtn.innerText = card.text;
+                cardBtn.onclick = () => fillSlotWithCard(index);
+                cardsArea.appendChild(cardBtn);
+            });
+        }
+
+        // 點擊下方字卡，填入第一個空的空格
+        function fillSlotWithCard(cardIndex) {
+            playSound('beep');
+            const emptySlotIndex = filledSlots.findIndex(slot => slot === null);
+            
+            if (emptySlotIndex !== -1) {
+                // 填入空格
+                filledSlots[emptySlotIndex] = cardIndex;
+                
+                // 更新空格畫面
+                const slotEl = document.getElementById(`slot-${emptySlotIndex}`);
+                slotEl.innerText = shuffledCards[cardIndex].text;
+                slotEl.classList.add('filled');
+                
+                // 隱藏下方卡片
+                document.getElementById(`card-${cardIndex}`).classList.add('hidden');
+
+                // 檢查是否全滿
+                if (!filledSlots.includes(null)) {
+                    setTimeout(checkAnswer, 300);
+                }
+            }
+        }
+
+        // 點擊上方空格，把卡片退回下方
+        function removeCardFromSlot(slotIndex) {
+            const cardIndex = filledSlots[slotIndex];
+            if (cardIndex !== null) {
+                playSound('beep');
+                // 清空空格
+                filledSlots[slotIndex] = null;
+                const slotEl = document.getElementById(`slot-${slotIndex}`);
+                slotEl.innerText = '';
+                slotEl.classList.remove('filled');
+                
+                // 顯示下方卡片
+                document.getElementById(`card-${cardIndex}`).classList.remove('hidden');
+            }
+        }
+
+        // 檢查答案是否正確
+        function checkAnswer() {
+            // 比對排序是否與原始句子一致
+            let isCorrect = true;
+            for (let i = 0; i < filledSlots.length; i++) {
+                const cardIndex = filledSlots[i];
+                if (shuffledCards[cardIndex].originalIndex !== i) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+
+            if (isCorrect) {
+                playSound('correct');
+                feedbackOverlay.style.display = 'flex';
+                // 念出完整的正確句子當作獎勵
+                readSentence(); 
+                feedbackOverlay.innerHTML = '<div>🌟</div><div style="font-size: 2.5rem;">太棒了！拼對了</div>';
+                
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < questionBank.length) {
+                        loadQuestion();
+                    } else {
+                        // 全破畫面
+                        feedbackOverlay.innerHTML = '<div>🎉</div><div style="font-size: 2.5rem;">恭喜完成所有挑戰！</div>';
+                    }
+                }, 2500); // 延長等待時間，讓學生聽完語音
+
+            } else {
+                playSound('wrong');
+                slotsArea.classList.add('shake-error');
+                setTimeout(() => slotsArea.classList.remove('shake-error'), 400);
+            }
+        }
+
+        // 啟動遊戲
+        loadQuestion();
+    </script>
+</body>
+</html>
