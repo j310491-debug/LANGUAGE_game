@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>語文小偵探：看圖選句</title>
+    <style>
+        /* 整體介面設定 */
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            background-color: #e8f5e9; /* 柔和的淺綠色背景 */
+            margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100dvh; box-sizing: border-box;
+            touch-action: manipulation; user-select: none;
+        }
+
+        #game-container {
+            width: 100%; max-width: 700px; height: 100%;
+            background-color: #ffffff; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 20px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 15px;
+            position: relative; overflow: hidden;
+        }
+
+        /* 啟動畫面 */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 300; text-align: center;
+        }
+        .start-btn {
+            padding: 20px 40px; font-size: 2.5rem; font-weight: bold;
+            background-color: #4caf50; color: white; border: none; border-radius: 20px;
+            cursor: pointer; box-shadow: 0 8px 0 #388e3c; transition: 0.1s;
+        }
+        .start-btn:active { transform: translateY(8px); box-shadow: 0 0 0 #388e3c; }
+
+        /* 頂部資訊列：連擊分數 */
+        #header-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #fff8e1; border-radius: 15px; padding: 10px 20px;
+            border: 3px solid #ffe082; font-size: 1.8rem; font-weight: bold; color: #f57c00;
+        }
+        #combo-display {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .star-icon { font-size: 2rem; animation: pulse 1s infinite alternate; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); }
+        }
+
+        /* 圖片與語音區 */
+        #image-area {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background-color: #e3f2fd; border-radius: 15px; padding: 15px;
+            border: 4px solid #90caf9; min-height: 220px; position: relative;
+        }
+        #picture-display {
+            display: flex; justify-content: center; align-items: center;
+            width: 100%; height: 100%; min-height: 180px;
+        }
+        #picture-display img {
+            max-width: 100%; max-height: 220px; 
+            border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            object-fit: contain;
+        }
+
+        /* 選項區 (3個句子) */
+        #options-area {
+            flex: 1; display: flex; flex-direction: column; gap: 15px; justify-content: center;
+        }
+        .option-btn {
+            width: 100%; padding: 20px 15px; font-size: 1.8rem; font-weight: bold;
+            background-color: #f5f5f5; border: 4px solid #e0e0e0; border-radius: 15px;
+            cursor: pointer; color: #333; box-shadow: 0 6px 0 #bdbdbd; 
+            transition: 0.1s; text-align: center; word-break: keep-all;
+        }
+        .option-btn:active { transform: translateY(6px); box-shadow: 0 0 0 #bdbdbd; }
+        .option-btn:disabled { pointer-events: none; }
+
+        /* 回饋視覺動畫 */
+        #visual-feedback {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; justify-content: center; align-items: center; flex-direction: column;
+            z-index: 100; font-size: 8rem; background-color: rgba(255,255,255,0.9);
+            font-weight: bold; text-align: center;
+        }
+
+        .shake-error { animation: shake 0.4s; border-color: #f44336 !important; background-color: #ffebee !important; }
+        .correct-glow { border-color: #4caf50 !important; background-color: #e8f5e9 !important; }
+        
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-10px);} 75% {transform: translateX(10px);} }
+
+        @media (max-width: 400px) {
+            #picture-display img { max-height: 160px; }
+            .option-btn { font-size: 1.4rem; padding: 15px 10px; }
+            #header-bar { font-size: 1.5rem; padding: 8px 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- 啟動畫面 -->
+        <div id="start-screen">
+            <h1 style="color: #2e7d32; font-size: 3.5rem; margin-bottom: 20px;">語文小偵探</h1>
+            <p style="font-size: 1.5rem; color: #555; margin-bottom: 40px;">看一看圖片，讀一讀，<br>哪一個句子才是對的呢？</p>
+            <button class="start-btn" onclick="startGame()">開始遊戲</button>
+        </div>
+
+        <!-- 頂部資訊 -->
+        <div id="header-bar">
+            <div>練習模式</div>
+            <div id="combo-display">
+                <span class="star-icon">⭐</span> <span id="combo-text">連續答對: 0</span>
+            </div>
+        </div>
+
+        <!-- 圖片與語音區 -->
+        <div id="image-area">
+        <!-- 圖片區 (移除語音按鈕) -->
+        <div id="image-area">
+            <div id="picture-display"></div>
+        </div>
+
+        <!-- 句子選項區 -->
+        <div id="options-area">
+            <button class="option-btn" id="opt-0" onclick="checkAnswer(0)"></button>
+            <button class="option-btn" id="opt-1" onclick="checkAnswer(1)"></button>
+            <button class="option-btn" id="opt-2" onclick="checkAnswer(2)"></button>
+        </div>
+
+        <div id="visual-feedback"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 老師出題區：升級為「智慧干擾選項」題庫
+        // 為了訓練閱讀細節(量詞、特徵)，我們預先設定好每一題的干擾選項
+        // ==========================================
+        const questionBank = [
+            { 
+                imgFileName: "img1.png", fallbackText: "西瓜圖片", 
+                sentence: "這裡有一個綠色的西瓜。",
+                wrongOptions: ["這裡有兩顆綠色的西瓜。", "這裡有一個紅色的西瓜。"] 
+            },
+            { 
+                imgFileName: "img2.png", fallbackText: "香蕉圖片", 
+                sentence: "這裡有兩根黃色的香蕉。",
+                wrongOptions: ["這裡有兩串黃色的香蕉。", "這裡有三根黃色的香蕉。"] 
+            },
+            { 
+                imgFileName: "img3.png", fallbackText: "草莓圖片", 
+                sentence: "這裡有三顆紅色的草莓。",
+                wrongOptions: ["這裡有三個紅色的草莓。", "這裡有四顆紅色的草莓。"] 
+            },
+            { 
+                imgFileName: "img4.png", fallbackText: "葡萄圖片", 
+                sentence: "這裡有四串紫色的葡萄。",
+                wrongOptions: ["這裡有四顆紫色的葡萄。", "這裡有四串綠色的葡萄。"] 
+            },
+            { 
+                imgFileName: "img5.png", fallbackText: "雞蛋圖片", 
+                sentence: "這裡有五個褐色的雞蛋。",
+                wrongOptions: ["這裡有五顆褐色的雞蛋。", "這裡有四個白色的雞蛋。"] 
+            },
+            { 
+                imgFileName: "img6.png", fallbackText: "老師上課", 
+                sentence: "老師在教室上課。",
+                wrongOptions: ["老師在操場上課。", "學生在教室上課。"] 
+            },
+            { 
+                imgFileName: "img7.png", fallbackText: "醫生治病", 
+                sentence: "醫生在醫院治病。",
+                wrongOptions: ["護士在醫院治病。", "醫生在診所休息。"] 
+            },
+            { 
+                imgFileName: "img8.png", fallbackText: "廚師炒菜", 
+                sentence: "廚師在廚房炒菜。",
+                wrongOptions: ["媽媽在廚房炒菜。", "廚師在客廳炒菜。"] 
+            },
+            { 
+                imgFileName: "img9.png", fallbackText: "姊姊跳繩", 
+                sentence: "姊姊在草地跳繩。",
+                wrongOptions: ["妹妹在草地跳繩。", "姊姊在操場跑步。"] 
+            },
+            { 
+                imgFileName: "img10.png", fallbackText: "阿姨吃飯", 
+                sentence: "阿姨在餐桌旁吃飯。",
+                wrongOptions: ["阿姨在沙發上吃飯。", "叔叔在餐桌旁吃飯。"] 
+            },
+            { 
+                imgFileName: "img11.png", fallbackText: "女孩洗手", 
+                sentence: "女孩在洗手檯旁洗手。",
+                wrongOptions: ["女孩在洗手檯旁洗臉。", "男孩在洗手檯旁洗手。"] 
+            }
+        ];
+
+        // 系統變數
+        let currentQ = null;
+        let correctOptionIndex = 0;
+        let comboCount = 0;
+        let isAnswering = false;
+
+        const pictureDisplay = document.getElementById('picture-display');
+        const comboText = document.getElementById('combo-text');
+        const visualFeedback = document.getElementById('visual-feedback');
+
+        // ==========================================
+        // 遊戲主邏輯 (完全移除語音機制，專注於視覺閱讀)
+        // ==========================================
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            comboCount = 0;
+            updateCombo();
+            loadNewQuestion();
+        }
+
+        function loadNewQuestion() {
+            isAnswering = false;
+            visualFeedback.style.display = 'none';
+            
+            // 解除按鈕禁用狀態並重置顏色
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('correct-glow', 'shake-error');
+            });
+            
+            // 隨機抽一題
+            const randIdx = Math.floor(Math.random() * questionBank.length);
+            currentQ = questionBank[randIdx];
+
+            // 載入真實圖片 (包含防呆機制)
+            pictureDisplay.innerHTML = '';
+            const imgEl = document.createElement('img');
+            imgEl.src = currentQ.imgFileName;
+            imgEl.alt = currentQ.fallbackText;
+            imgEl.onerror = function() {
+                this.onerror = null;
+                this.src = `https://placehold.co/400x300/e3f2fd/1565c0?text=${encodeURIComponent(currentQ.fallbackText)}`;
+            };
+            pictureDisplay.appendChild(imgEl);
+
+            // 準備 3 個選項：1個正確，加上我們精心設計的2個干擾選項
+            let options = [ 
+                { text: currentQ.sentence, isCorrect: true },
+                { text: currentQ.wrongOptions[0], isCorrect: false },
+                { text: currentQ.wrongOptions[1], isCorrect: false }
+            ];
+
+            // 打亂這 3 個選項的排列順序
+            options.sort(() => Math.random() - 0.5);
+
+            // 顯示到畫面上
+            options.forEach((opt, index) => {
+                const btn = document.getElementById(`opt-${index}`);
+                btn.innerText = opt.text;
+                if (opt.isCorrect) correctOptionIndex = index;
+            });
+        }
+
+        function checkAnswer(selectedIndex) {
+            if (isAnswering) return; 
+            isAnswering = true;
+
+            const clickedBtn = document.getElementById(`opt-${selectedIndex}`);
+
+            // 禁用所有按鈕防止連點
+            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === correctOptionIndex) {
+                // 答對了 (純視覺回饋)
+                clickedBtn.classList.add('correct-glow');
+                
+                comboCount++;
+                updateCombo();
+
+                visualFeedback.style.display = 'flex';
+                visualFeedback.innerHTML = '<div>🌟</div><div style="font-size: 3rem;">答對了！</div>';
+                visualFeedback.style.color = '#4caf50';
+
+                setTimeout(loadNewQuestion, 2000); // 2秒後自動換題
+            } else {
+                // 答錯了 (純視覺回饋)
+                clickedBtn.classList.add('shake-error');
+                
+                // 顯示出正確的答案給學生看
+                document.getElementById(`opt-${correctOptionIndex}`).classList.add('correct-glow');
+                
+                comboCount = 0; // 連擊歸零
+                updateCombo();
+
+                visualFeedback.style.display = 'flex';
+                visualFeedback.innerHTML = '<div>👀</div><div style="font-size: 3rem;">再看仔細一點喔</div>';
+                visualFeedback.style.color = '#f44336';
+
+                setTimeout(loadNewQuestion, 3000); // 給予3秒時間看正確答案
+            }
+        }
+
+        function updateCombo() {
+            comboText.innerText = `連續答對: ${comboCount}`;
+        }
+    </script>
+</body>
+</html>
