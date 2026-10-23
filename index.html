@@ -1,1648 +1,1197 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>連假注音小達人</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國二國文段考大冒險 · 四日修煉之塔 (康軒版八上)</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
-    @keyframes popIn {
-      0% { transform: scale(0.85); opacity: 0; }
-      70% { transform: scale(1.04); }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-6px); }
-      40%, 80% { transform: translateX(6px); }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
     }
     @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.45); }
-      50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.4)); }
+      50% { filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.8)); }
     }
-    .animate-pop { animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    .animate-shake { animation: shake 0.32s ease-in-out; }
-    .key-hint-glow {
-      animation: pulseGlow 1.4s infinite;
-      border-color: #3b82f6 !important;
-      background-color: rgba(59, 130, 246, 0.2) !important;
+    @keyframes popIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
-    .zhuyin-box {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
+    .animate-float { animation: float 3s ease-in-out infinite; }
+    .animate-glow { animation: pulseGlow 2s ease-in-out infinite; }
+    .animate-pop { animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+    /* Confetti particle */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 14px;
+      pointer-events: none;
+      z-index: 9999;
+      animation: fall linear forwards;
     }
-    .zhuyin-phonetics {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      line-height: 1.05;
-      font-weight: 700;
+    @keyframes fall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
     }
-    .zhuyin-tone {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
+
+    @media print {
+      body * { visibility: hidden; }
+      #printableCert, #printableCert * { visibility: visible; }
+      #printableCert {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 24px;
+        background: white !important;
+        color: black !important;
+      }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
-<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-4 select-none">
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col items-center p-2 sm:p-4 selection:bg-amber-500 selection:text-slate-950">
 
-  <div class="max-w-4xl mx-auto space-y-4">
-
-    <!-- 頂部：四天連假切換與獎牌狀態 -->
-    <header class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm space-y-3">
-      <div class="flex items-center justify-between gap-3">
-        <h1 class="text-lg md:text-xl font-bold tracking-tight flex items-center gap-2">
-          <span>🎯 連假注音練習</span>
-        </h1>
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold text-[var(--muted-foreground)]">
-            獎牌 <strong id="medalCountText" class="text-amber-500">0 / 4</strong>
-          </span>
-          <div id="medalRack" class="flex items-center gap-1.5"></div>
+  <!-- 主外框容器 -->
+  <div class="w-full max-w-3xl bg-slate-900/95 border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-md transition-all duration-300 my-2">
+    
+    <!-- 頂部導航狀態列 -->
+    <header class="bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 px-4 py-3.5 border-b border-indigo-800/40 flex items-center justify-between gap-2">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="goToHome()">
+        <span class="text-3xl animate-float">🦉</span>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-black text-base sm:text-lg text-amber-300 tracking-wide">國二國文段考大冒險</h1>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30 font-bold">康軒八上</span>
+          </div>
+          <p class="text-xs text-indigo-300">連假四日修煉之塔 · 第一次段考高分出擊</p>
         </div>
       </div>
 
-      <!-- 10/23 ~ 10/26 日期分頁 -->
-      <div id="dayTabs" class="grid grid-cols-4 gap-2"></div>
+      <div class="flex items-center gap-2">
+        <button id="soundBtn" onclick="toggleSound()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-200 text-xs flex items-center gap-1 border border-indigo-700/50 transition">
+          <span id="soundIcon">🔊</span>
+        </button>
+        <button onclick="openMistakesModal()" class="px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs flex items-center gap-1 border border-rose-500/40 transition font-bold">
+          <span>📕 錯題本</span>
+          <span id="mistakeBadge" class="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+      </div>
     </header>
 
-    <!-- 題目與輸入選字主區 -->
-    <section class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
-
-      <!-- 題號進度列 ＋ 輔助開關 -->
-      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[var(--border)]">
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <div id="sentenceDots" class="flex items-center gap-1"></div>
-          <span id="sentenceProgressLabel" class="text-xs font-semibold text-[var(--muted-foreground)] ml-1">
-            1 / 10
-          </span>
+    <!-- 視圖 1：冒險大地圖（選關卡） -->
+    <section id="mapView" class="p-4 sm:p-6 space-y-6">
+      <!-- 玩家狀態卡片 -->
+      <div class="bg-gradient-to-r from-indigo-900/60 to-purple-900/40 rounded-2xl p-4 border border-indigo-600/30 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-inner">
+            🧙‍♂️
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="playerNameDisplay" class="font-bold text-slate-100 text-base">國文小行者</span>
+              <button onclick="editPlayerName()" class="text-xs text-indigo-300 hover:text-amber-300 underline">修改稱號</button>
+            </div>
+            <p class="text-xs text-indigo-200 mt-0.5">累計總分：<span id="totalScoreDisplay" class="text-amber-400 font-black text-sm">0</span> / 100 分</p>
+          </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <button id="toggleKeyHintBtn" onclick="toggleKeyHint()" class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-[var(--border)] transition">
-            💡 鍵位提示：<span id="keyHintStatus">開</span>
-          </button>
-          <button onclick="prevSentence()" class="px-2.5 py-1 rounded-lg text-xs border border-[var(--border)] hover:bg-[var(--secondary)] transition">
-            ◀ 上一題
-          </button>
-          <button onclick="nextSentence()" class="px-2.5 py-1 rounded-lg text-xs border border-[var(--border)] hover:bg-[var(--secondary)] transition">
-            下一題 ▶
-          </button>
+          <div class="text-right">
+            <p class="text-xs text-slate-400">總通關進度</p>
+            <p class="text-sm font-bold text-amber-300" id="totalStarsDisplay">⭐ 0 / 12 星</p>
+          </div>
+          <button onclick="resetAllProgress()" class="text-xs text-slate-400 hover:text-rose-400 p-2" title="重置進度">↺</button>
         </div>
       </div>
 
-      <!-- 完整短句直接呈現（供玩家對照選字） -->
-      <div class="flex items-center justify-between gap-3 bg-[var(--background)] border border-[var(--border)] rounded-xl px-4 py-3">
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-500">
-            目標短句
+      <!-- 四大關卡卡片列表 -->
+      <div class="space-y-3.5">
+        <h2 class="text-xs font-bold text-indigo-300 tracking-wider uppercase flex items-center gap-1.5">
+          <span>🗺️ 連假四天任務關卡</span>
+          <span class="text-slate-400 font-normal">（建議每日攻克一關）</span>
+        </h2>
+
+        <!-- Day 1 卡片 -->
+        <div onclick="startLevel(1)" class="group cursor-pointer bg-slate-800/80 hover:bg-indigo-950/60 border border-slate-700/60 hover:border-amber-400/60 rounded-2xl p-4 transition-all duration-300 shadow-md hover:shadow-indigo-500/10 flex items-center justify-between">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              🪁
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 font-bold">Day 1</span>
+                <h3 class="font-bold text-slate-100 group-hover:text-amber-300 transition">第一課：小詩選（跳水、風箏）</h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">白靈現代詩意象、空間動態、象徵意涵與修辭解析（10 題）</p>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span id="starL1" class="text-sm text-slate-500 block">☆☆☆</span>
+            <span class="text-xs text-cyan-400 font-bold group-hover:translate-x-1 inline-block transition">挑戰 ➔</span>
+          </div>
+        </div>
+
+        <!-- Day 2 卡片 -->
+        <div onclick="startLevel(2)" class="group cursor-pointer bg-slate-800/80 hover:bg-indigo-950/60 border border-slate-700/60 hover:border-amber-400/60 rounded-2xl p-4 transition-all duration-300 shadow-md hover:shadow-indigo-500/10 flex items-center justify-between">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              📜
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-bold">Day 2</span>
+                <h3 class="font-bold text-slate-100 group-hover:text-amber-300 transition">第二課：古體詩選（庭中有奇樹、慈烏夜啼）</h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">古體詩 vs 近體詩格律、折花思念、反哺孝道諷喻典故（10 題）</p>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span id="starL2" class="text-sm text-slate-500 block">☆☆☆</span>
+            <span class="text-xs text-emerald-400 font-bold group-hover:translate-x-1 inline-block transition">挑戰 ➔</span>
+          </div>
+        </div>
+
+        <!-- Day 3 卡片 -->
+        <div onclick="startLevel(3)" class="group cursor-pointer bg-slate-800/80 hover:bg-indigo-950/60 border border-slate-700/60 hover:border-amber-400/60 rounded-2xl p-4 transition-all duration-300 shadow-md hover:shadow-indigo-500/10 flex items-center justify-between">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              🍐
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold">Day 3</span>
+                <h3 class="font-bold text-slate-100 group-hover:text-amber-300 transition">第三課：土芭樂的生存之道</h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">自然生態觀察、改良種vs土芭樂、逆境生命哲思（10 題）</p>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span id="starL3" class="text-sm text-slate-500 block">☆☆☆</span>
+            <span class="text-xs text-amber-400 font-bold group-hover:translate-x-1 inline-block transition">挑戰 ➔</span>
+          </div>
+        </div>
+
+        <!-- Day 4 卡片 -->
+        <div onclick="startLevel(4)" class="group cursor-pointer bg-slate-800/80 hover:bg-indigo-950/60 border border-slate-700/60 hover:border-amber-400/60 rounded-2xl p-4 transition-all duration-300 shadow-md hover:shadow-indigo-500/10 flex items-center justify-between">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              🏛️
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 font-bold">Day 4</span>
+                <h3 class="font-bold text-slate-100 group-hover:text-amber-300 transition">語文天地（一）：語法（上）詞類 ＆ 總決戰</h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">實詞虛詞辨析、轉品修辭、跨篇章閱讀素養會考模擬（10 題）</p>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span id="starL4" class="text-sm text-slate-500 block">☆☆☆</span>
+            <span class="text-xs text-purple-400 font-bold group-hover:translate-x-1 inline-block transition">挑戰 ➔</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 通關四天證書獎勵區 -->
+      <div id="certBanner" class="p-4 bg-gradient-to-r from-amber-500/15 via-yellow-400/10 to-amber-500/15 border border-amber-400/40 rounded-2xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl animate-bounce">🏆</span>
+          <div>
+            <h4 class="font-black text-amber-300 text-sm">解鎖「段考學霸封神狀」</h4>
+            <p class="text-xs text-slate-300">完成四日全部 40 道挑戰題，即可頒發專屬榮譽證書！</p>
+          </div>
+        </div>
+        <button onclick="openCertificateModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-slate-950 font-black text-xs shadow-md transition">
+          檢視證書
+        </button>
+      </div>
+    </section>
+
+    <!-- 視圖 2：答題戰鬥卡片 -->
+    <section id="quizView" class="hidden p-4 sm:p-6 space-y-4">
+      
+      <!-- 關卡頂端狀態 -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 text-xs">
+        <div class="flex items-center gap-2">
+          <button onclick="goToHome()" class="text-slate-400 hover:text-amber-300 flex items-center gap-1 font-semibold">
+            <span>❮ 關卡地圖</span>
+          </button>
+          <span class="text-slate-600">|</span>
+          <span id="quizStageBadge" class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">
+            Day 1 · 小詩選
           </span>
-          <div id="fullSentenceDisplay" class="text-xl md:text-2xl font-extrabold tracking-wide">
-            <!-- JS 渲染完整短句，並標示目前所在的字 -->
+        </div>
+
+        <!-- 生命值 ❤️ 與連擊 -->
+        <div class="flex items-center gap-3">
+          <span id="comboIndicator" class="hidden px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[11px] animate-pulse">
+            🔥 COMBO x2
+          </span>
+          <div id="livesContainer" class="flex items-center gap-1 text-base">
+            <span>❤️</span><span>❤️</span><span>❤️</span>
           </div>
         </div>
-        <button onclick="speakCurrentSentence()" class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:opacity-90 transition flex items-center gap-1">
-          🔊 朗讀
+      </div>
+
+      <!-- 進度條 -->
+      <div class="space-y-1">
+        <div class="flex justify-between text-xs text-slate-400 font-mono">
+          <span>進度：<strong id="qCurrentNum" class="text-amber-300">1</strong> / 10 題</span>
+          <span>本關得分：<strong id="stageScore" class="text-emerald-400">0</strong> / 25 分</span>
+        </div>
+        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+          <div id="quizProgressBar" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full transition-all duration-300" style="width: 10%;"></div>
+        </div>
+      </div>
+
+      <!-- 題型標籤與題幹 -->
+      <div class="bg-slate-850 bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
+        <div class="flex items-center gap-2">
+          <span id="qTypeBadge" class="text-xs px-2.5 py-0.5 rounded-md font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            核心文意
+          </span>
+          <span id="qScopeBadge" class="text-xs text-indigo-300">白靈〈跳水〉</span>
+        </div>
+
+        <h3 id="qTitle" class="text-base sm:text-lg font-bold text-slate-100 leading-relaxed">
+          載入題目中...
+        </h3>
+      </div>
+
+      <!-- 四個選項按鈕區 -->
+      <div id="optionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+        <!-- 動態渲染選項 -->
+      </div>
+
+      <!-- 答題即時反饋盒 -->
+      <div id="feedbackCard" class="hidden rounded-2xl p-4 transition-all duration-300 space-y-1.5 animate-pop border">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="feedbackIcon" class="text-xl">🎉</span>
+            <h4 id="feedbackTitle" class="font-black text-sm">回答正確！</h4>
+          </div>
+          <span id="feedbackScoreTag" class="text-xs font-bold px-2 py-0.5 rounded">+2.5 分</span>
+        </div>
+        <p id="feedbackExplain" class="text-xs sm:text-sm text-slate-200 leading-relaxed opacity-95">
+          解析說明...
+        </p>
+      </div>
+
+      <!-- 下一題按鈕 -->
+      <div class="flex justify-end pt-2">
+        <button id="nextBtn" onclick="nextQuestion()" class="hidden px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 transform active:scale-95 transition flex items-center gap-1.5">
+          <span id="nextBtnText">下一題</span> <span>➜</span>
         </button>
-      </div>
-
-      <!-- 逐字注音進度卡片列 -->
-      <div id="sentenceBoard" class="flex flex-wrap items-center justify-center gap-2 py-3 px-2 bg-[var(--background)] border border-[var(--border)] rounded-xl min-h-[104px]">
-      </div>
-
-      <!-- 輸入緩衝區 ＆ 選字欄 -->
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        <!-- 左：目標注音 ➔ 目前輸入 -->
-        <div class="md:col-span-5 bg-[var(--background)] border border-[var(--border)] rounded-xl p-3 flex items-center justify-around gap-2">
-          <div class="text-center">
-            <div class="text-xs text-[var(--muted-foreground)] mb-1">目標注音</div>
-            <div id="targetZhuyinBig" class="px-3 py-2 rounded-xl bg-[var(--card)] border border-[var(--border)] text-2xl font-bold tracking-wider text-amber-500 min-w-[96px]">
-              ㄗㄠˇ
-            </div>
-          </div>
-
-          <div class="text-base text-[var(--muted-foreground)] font-bold">➔</div>
-
-          <div class="text-center flex-1">
-            <div class="text-xs text-[var(--muted-foreground)] mb-1">你的輸入</div>
-            <div id="inputBufferBox" class="px-3 py-2 rounded-xl bg-[var(--card)] border-2 border-blue-500/50 text-2xl font-bold tracking-wider min-h-[48px] flex items-center justify-center gap-1">
-            </div>
-          </div>
-        </div>
-
-        <!-- 右：4 個候選字 -->
-        <div class="md:col-span-7 bg-[var(--background)] border border-[var(--border)] rounded-xl p-3 space-y-2">
-          <div id="candidateContainer" class="grid grid-cols-4 gap-2"></div>
-          <div id="feedbackBanner" class="text-xs font-medium text-center py-1 px-2 rounded-lg bg-[var(--card)] text-[var(--muted-foreground)]">
-            請輸入注音與聲調
-          </div>
-        </div>
       </div>
 
     </section>
 
-    <!-- 注音鍵盤區 -->
-    <section class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm space-y-2.5">
-      <!-- 聲調列 ＋ 倒退/清空 -->
-      <div class="grid grid-cols-7 gap-1.5">
-        <button data-zhuyin="ˉ" onclick="inputSymbol('ˉ')" class="zhuyin-key py-2 px-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] transition flex flex-col items-center justify-center">
-          <span class="text-sm md:text-base font-extrabold text-amber-500">ˉ 一聲</span>
-          <span class="text-xs text-[var(--muted-foreground)]">Space</span>
-        </button>
-        <button data-zhuyin="ˊ" onclick="inputSymbol('ˊ')" class="zhuyin-key py-2 px-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] transition flex flex-col items-center justify-center">
-          <span class="text-sm md:text-base font-extrabold text-amber-500">ˊ 二聲</span>
-          <span class="text-xs text-[var(--muted-foreground)]">6</span>
-        </button>
-        <button data-zhuyin="ˇ" onclick="inputSymbol('ˇ')" class="zhuyin-key py-2 px-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] transition flex flex-col items-center justify-center">
-          <span class="text-sm md:text-base font-extrabold text-amber-500">ˇ 三聲</span>
-          <span class="text-xs text-[var(--muted-foreground)]">3</span>
-        </button>
-        <button data-zhuyin="ˋ" onclick="inputSymbol('ˋ')" class="zhuyin-key py-2 px-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] transition flex flex-col items-center justify-center">
-          <span class="text-sm md:text-base font-extrabold text-amber-500">ˋ 四聲</span>
-          <span class="text-xs text-[var(--muted-foreground)]">4</span>
-        </button>
-        <button data-zhuyin="˙" onclick="inputSymbol('˙')" class="zhuyin-key py-2 px-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] transition flex flex-col items-center justify-center">
-          <span class="text-sm md:text-base font-extrabold text-amber-500">˙ 輕聲</span>
-          <span class="text-xs text-[var(--muted-foreground)]">7</span>
-        </button>
-        <button onclick="handleBackspace()" class="py-2 px-1 rounded-xl border border-[var(--border)] bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:opacity-90 transition flex flex-col items-center justify-center font-bold text-xs">
-          <span>⌫ 倒退</span>
-          <span class="text-[var(--muted-foreground)] font-normal">Back</span>
-        </button>
-        <button onclick="clearInputBuffer()" class="py-2 px-1 rounded-xl border border-[var(--border)] bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:opacity-90 transition flex flex-col items-center justify-center font-bold text-xs">
-          <span>🗑️ 重打</span>
-          <span class="text-[var(--muted-foreground)] font-normal">Esc</span>
-        </button>
+    <!-- 視圖 3：關卡結算畫面 -->
+    <section id="resultView" class="hidden p-6 sm:p-8 text-center space-y-5 animate-pop">
+      <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-amber-400 to-yellow-200 flex items-center justify-center text-4xl shadow-xl animate-float" id="resultIcon">
+        🏆
+      </div>
+      <div>
+        <h3 class="text-2xl font-black text-amber-300" id="resultTitle">關卡修煉完成！</h3>
+        <p class="text-xs text-indigo-200 mt-1" id="resultSubtitle">你已完成本關 10 道試煉題目</p>
       </div>
 
-      <!-- 大千排列 4 列注音鍵盤 -->
-      <div id="keyboardRows" class="space-y-1.5 pt-1"></div>
+      <div class="grid grid-cols-3 gap-3 max-w-md mx-auto">
+        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-xl">
+          <span class="text-xs text-slate-400 block">本關得分</span>
+          <span class="text-xl font-black text-amber-400" id="resScore">25 / 25</span>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-xl">
+          <span class="text-xs text-slate-400 block">星級評價</span>
+          <span class="text-xl font-black text-yellow-300" id="resStars">⭐⭐⭐</span>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-xl">
+          <span class="text-xs text-slate-400 block">正確率</span>
+          <span class="text-xl font-black text-emerald-400" id="resAccuracy">100%</span>
+        </div>
+      </div>
 
-      <div class="flex justify-end pt-1">
-        <button onclick="resetAllProgress()" class="text-xs text-[var(--muted-foreground)] hover:text-rose-400 transition">
-          重置紀錄
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <button onclick="goToHome()" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 transition">
+          🗺️ 返回冒險地圖
+        </button>
+        <button onclick="retryCurrentLevel()" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-900/80 hover:bg-indigo-800 text-indigo-200 border border-indigo-700 transition">
+          🔄 重新挑戰本關
+        </button>
+        <button id="nextLevelBtn" onclick="goToNextLevel()" class="px-6 py-2.5 rounded-xl font-black text-xs bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md hover:from-amber-400 transition">
+          前往下一天任務 ➔
         </button>
       </div>
     </section>
+
+    <!-- 頁尾版權 -->
+    <footer class="bg-slate-950 px-4 py-3 border-t border-slate-800/80 text-center text-xs text-slate-500 flex flex-wrap items-center justify-between gap-1 no-print">
+      <span>康軒版國中八上國文 第一次段考線上複習題庫</span>
+      <span class="text-amber-400/80">連假四天 · 穩拿高分</span>
+    </footer>
 
   </div>
 
-  <!-- 獲得獎牌慶祝彈窗 -->
-  <div id="medalModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl max-w-md w-full p-6 text-center shadow-xl animate-pop space-y-4">
-      <div id="modalMedalIcon" class="w-24 h-24 mx-auto rounded-full flex items-center justify-center text-5xl bg-amber-500/15 border-2 border-amber-400 shadow-inner">
-        🏅
-      </div>
-      <div class="space-y-1">
-        <div id="modalDayBadge" class="text-xs font-bold uppercase tracking-widest text-amber-500">
-          10/23 任務完成
+  <!-- 錯題本 Modal -->
+  <div id="mistakesModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+    <div class="bg-slate-900 border border-indigo-700/60 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-pop">
+      <div class="bg-gradient-to-r from-rose-950 to-indigo-950 px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📕</span>
+          <div>
+            <h3 class="font-bold text-base text-rose-300">錯題強化筆記本</h3>
+            <p class="text-xs text-slate-400">複習做錯的題目，觀念釐清就不再失分！</p>
+          </div>
         </div>
-        <h3 id="modalTitle" class="text-2xl font-extrabold">
-          獲得「啟程之星獎牌」！
+        <button onclick="closeMistakesModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">✕</button>
+      </div>
+
+      <div id="mistakesList" class="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1 text-xs sm:text-sm">
+        <!-- 錯題卡片動態載入 -->
+      </div>
+
+      <div class="bg-slate-950 px-5 py-3 border-t border-slate-800 flex items-center justify-between">
+        <button onclick="clearMistakes()" class="text-xs text-slate-400 hover:text-rose-400 underline">清空錯題紀錄</button>
+        <button onclick="closeMistakesModal()" class="px-5 py-2 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-slate-100 text-xs font-bold">關閉筆記</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 榮譽證書 Modal (可列印) -->
+  <div id="certModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div class="w-full max-w-xl my-auto animate-pop space-y-4">
+      <div id="printableCert" class="bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-950 border-4 border-double border-amber-400 rounded-3xl p-6 sm:p-8 text-center shadow-2xl relative">
+        <div class="border-b-2 border-amber-500/40 pb-3 mb-4 flex items-center justify-between text-xs text-amber-300 font-mono tracking-widest">
+          <span>★ GRADE 8 MIDTERM CERTIFICATE ★</span>
+          <span>康軒國文八上</span>
+        </div>
+
+        <h3 class="text-2xl sm:text-3xl font-black text-amber-300 tracking-widest mb-1">
+          段 考 學 霸 封 神 狀
         </h3>
-        <p id="modalDesc" class="text-sm text-[var(--muted-foreground)]">
-          太棒了！你已完成今天全部 10 句練習！
+        <p class="text-xs text-indigo-300 tracking-wider mb-5">CERTIFICATE OF EXCELLENCE</p>
+
+        <p class="text-sm sm:text-base text-slate-200 leading-relaxed mb-4">
+          恭喜學員 <strong id="certStudentName" class="text-amber-300 underline font-bold text-lg">國文小行者</strong> 同學：
         </p>
+
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md mx-auto mb-5">
+          在「國二國文第一次段考四日修煉之塔」連假複習任務中，圓滿攻克四大難關，融會貫通〈小詩選〉、〈古體詩選〉、〈土芭樂的生存之道〉與〈詞類語法〉，表現卓絕，特頒此狀以資嘉勉！
+        </p>
+
+        <div class="py-3 px-6 bg-amber-500/20 border-2 border-amber-400/60 rounded-2xl max-w-xs mx-auto mb-5 shadow-inner">
+          <p class="text-xs text-amber-200">段考修煉總榮譽得分</p>
+          <h4 class="text-2xl font-black text-amber-300 tracking-wider" id="certScoreTag">100 / 100 分</h4>
+          <p class="text-xs text-yellow-300 mt-0.5">評價：👑 SSS級 國文狀元神官</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs text-slate-400 pt-3 border-t border-indigo-900/60 text-left">
+          <div>
+            <p>主辦認證：國中八年級國文段考題庫</p>
+            <p id="certDate">頒發日期：2026 年 10 月</p>
+          </div>
+          <div class="text-right">
+            <span class="inline-block px-3 py-1 bg-amber-500/10 border border-amber-400/30 rounded-lg text-amber-300 font-bold">
+              ★ 文曲星君封神認證 ★
+            </span>
+          </div>
+        </div>
       </div>
-      <div id="allMedalsBanner" class="hidden p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold">
-        🎉 恭喜集滿 10/23～10/26 全部 4 面獎牌！
-      </div>
-      <div class="flex items-center justify-center gap-3 pt-2">
-        <button onclick="closeMedalModal()" class="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--border)] hover:bg-[var(--secondary)] transition">
-          留在今日
+
+      <div class="flex items-center justify-center gap-3 no-print">
+        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-700 hover:bg-indigo-600 text-white shadow-md flex items-center gap-1.5 transition">
+          🖨️ 列印 / 存為PDF證書
         </button>
-        <button id="nextDayModalBtn" onclick="goToNextDayFromModal()" class="px-5 py-2 rounded-xl text-sm font-bold bg-amber-500 text-black hover:bg-amber-400 transition">
-          下一天挑戰 ➔
+        <button onclick="closeCertificateModal()" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          關閉
         </button>
       </div>
     </div>
   </div>
 
   <script>
-    const INITIALS = new Set(['ㄅ','ㄆ','ㄇ','ㄈ','ㄉ','ㄊ','ㄋ','ㄌ','ㄍ','ㄎ','ㄏ','ㄐ','ㄑ','ㄒ','ㄓ','ㄔ','ㄕ','ㄖ','ㄗ','ㄘ','ㄙ']);
-    const MEDIALS  = new Set(['ㄧ','ㄨ','ㄩ']);
-    const RIMES    = new Set(['ㄚ','ㄛ','ㄜ','ㄝ','ㄞ','ㄟ','ㄠ','ㄡ','ㄢ','ㄣ','ㄤ','ㄥ','ㄦ']);
-    const TONES    = new Set(['ˉ','ˊ','ˇ','ˋ','˙']);
-
-    const KEYBOARD_LAYOUT = [
-      [
-        { zhuyin: 'ㄅ', key: '1' },
-        { zhuyin: 'ㄉ', key: '2' },
-        { zhuyin: 'ˇ', key: '3' },
-        { zhuyin: 'ˋ', key: '4' },
-        { zhuyin: 'ㄓ', key: '5' },
-        { zhuyin: 'ˊ', key: '6' },
-        { zhuyin: '˙', key: '7' },
-        { zhuyin: 'ㄚ', key: '8' },
-        { zhuyin: 'ㄞ', key: '9' },
-        { zhuyin: 'ㄢ', key: '0' },
-        { zhuyin: 'ㄦ', key: '-' }
-      ],
-      [
-        { zhuyin: 'ㄆ', key: 'Q' },
-        { zhuyin: 'ㄊ', key: 'W' },
-        { zhuyin: 'ㄍ', key: 'E' },
-        { zhuyin: 'ㄐ', key: 'R' },
-        { zhuyin: 'ㄔ', key: 'T' },
-        { zhuyin: 'ㄗ', key: 'Y' },
-        { zhuyin: 'ㄧ', key: 'U' },
-        { zhuyin: 'ㄛ', key: 'I' },
-        { zhuyin: 'ㄟ', key: 'O' },
-        { zhuyin: 'ㄣ', key: 'P' }
-      ],
-      [
-        { zhuyin: 'ㄇ', key: 'A' },
-        { zhuyin: 'ㄋ', key: 'S' },
-        { zhuyin: 'ㄎ', key: 'D' },
-        { zhuyin: 'ㄑ', key: 'F' },
-        { zhuyin: 'ㄕ', key: 'G' },
-        { zhuyin: 'ㄘ', key: 'H' },
-        { zhuyin: 'ㄨ', key: 'J' },
-        { zhuyin: 'ㄜ', key: 'K' },
-        { zhuyin: 'ㄠ', key: 'L' },
-        { zhuyin: 'ㄤ', key: ';' }
-      ],
-      [
-        { zhuyin: 'ㄈ', key: 'Z' },
-        { zhuyin: 'ㄌ', key: 'X' },
-        { zhuyin: 'ㄏ', key: 'C' },
-        { zhuyin: 'ㄒ', key: 'V' },
-        { zhuyin: 'ㄖ', key: 'B' },
-        { zhuyin: 'ㄙ', key: 'N' },
-        { zhuyin: 'ㄩ', key: 'M' },
-        { zhuyin: 'ㄝ', key: ',' },
-        { zhuyin: 'ㄡ', key: '.' },
-        { zhuyin: 'ㄥ', key: '/' }
-      ]
-    ];
-
-    const KEY_TO_ZHUYIN = {
-      '1': 'ㄅ', '2': 'ㄉ', '3': 'ˇ', '4': 'ˋ', '5': 'ㄓ', '6': 'ˊ', '7': '˙', '8': 'ㄚ', '9': 'ㄞ', '0': 'ㄢ', '-': 'ㄦ',
-      'q': 'ㄆ', 'w': 'ㄊ', 'e': 'ㄍ', 'r': 'ㄐ', 't': 'ㄔ', 'y': 'ㄗ', 'u': 'ㄧ', 'i': 'ㄛ', 'o': 'ㄟ', 'p': 'ㄣ',
-      'a': 'ㄇ', 's': 'ㄋ', 'd': 'ㄎ', 'f': 'ㄑ', 'g': 'ㄕ', 'h': 'ㄘ', 'j': 'ㄨ', 'k': 'ㄜ', 'l': 'ㄠ', ';': 'ㄤ',
-      'z': 'ㄈ', 'x': 'ㄌ', 'c': 'ㄏ', 'v': 'ㄒ', 'b': 'ㄖ', 'n': 'ㄙ', 'm': 'ㄩ', ',': 'ㄝ', '.': 'ㄡ', '/': 'ㄥ',
-      ' ': 'ˉ'
-    };
-
-    function ch(char, phonetics, tone, options) {
-      return { char, phonetics, tone, options };
-    }
-
-    const HOLIDAY_DATA = [
+    /* ==========================================================
+       40 道康軒八上第一次段考全真題庫資料庫
+       4 大關卡，每關 10 題，每題 2.5 分，共 100 分
+       ========================================================== */
+    const STAGES_DATA = [
       {
-        date: '10/23',
-        medalName: '啟程之星獎牌',
-        medalEmoji: '🌅',
-        sentences: [
+        id: 1,
+        name: "Day 1 · 小詩選（跳水、風箏）",
+        badge: "第一課",
+        icon: "🪁",
+        desc: "白靈現代詩意象、空間動態、象徵意涵與修辭",
+        questions: [
           {
-            chars: [
-              ch('早', 'ㄗㄠ', 'ˇ', ['早','澡','找','棗']),
-              ch('安', 'ㄢ', 'ˉ', ['安','鞍','氨','庵']),
-              { char: '，', isPunct: true },
-              ch('今', 'ㄐㄧㄣ', 'ˉ', ['今','金','斤','津']),
-              ch('天', 'ㄊㄧㄢ', 'ˉ', ['天','添','篇','田']),
-              ch('天', 'ㄊㄧㄢ', 'ˉ', ['天','添','篇','田']),
-              ch('氣', 'ㄑㄧ', 'ˋ', ['氣','汽','器','棄']),
-              ch('真', 'ㄓㄣ', 'ˉ', ['真','針','珍','偵']),
-              ch('好', 'ㄏㄠ', 'ˇ', ['好','號','耗','郝'])
-            ]
+            id: 1, type: "字音字形", scope: "小詩選",
+            title: "請問詞語「澎湃洶湧」中的「澎」字，標準國語注音為何？",
+            options: ["ㄆㄥˊ", "ㄆㄥ", "ㄆㄤ", "ㄅㄥˋ"],
+            answer: "ㄆㄥ",
+            explain: "「澎」湃注音為「ㄆㄥ」，一聲；若為「彭」則為ㄆㄥˊ。"
           },
           {
-            chars: [
-              ch('出', 'ㄔㄨ', 'ˉ', ['出','初','除','廚']),
-              ch('門', 'ㄇㄣ', 'ˊ', ['門','們','悶','捫']),
-              ch('記', 'ㄐㄧ', 'ˋ', ['記','計','寄','季']),
-              ch('得', 'ㄉㄜ', '˙', ['得','的','德','地']),
-              ch('帶', 'ㄉㄞ', 'ˋ', ['帶','代','袋','待']),
-              ch('水', 'ㄕㄨㄟ', 'ˇ', ['水','誰','髓','隨']),
-              ch('壺', 'ㄏㄨ', 'ˊ', ['壺','湖','狐','糊']),
-              ch('和', 'ㄏㄢ', 'ˋ', ['和','汗','漢','旱']),
-              ch('雨', 'ㄩ', 'ˇ', ['雨','語','羽','與']),
-              ch('傘', 'ㄙㄢ', 'ˇ', ['傘','散','閃','毯'])
-            ]
+            id: 2, type: "字音字形", scope: "小詩選",
+            title: "請問成語「扶搖直上」中的「搖」字，標準國語注音為何？",
+            options: ["ㄧㄠˊ", "ㄧㄠˇ", "ㄖㄠˊ", "ㄧㄠˋ"],
+            answer: "ㄧㄠˊ",
+            explain: "「扶搖直上」注音為「ㄈㄨˊ ㄧㄠˊ ㄓˊ ㄕㄤˋ」，形容地位或名聲迅速攀升。"
           },
           {
-            chars: [
-              ch('早', 'ㄗㄠ', 'ˇ', ['早','澡','找','棗']),
-              ch('餐', 'ㄘㄢ', 'ˉ', ['餐','參','殘','蠶']),
-              ch('店', 'ㄉㄧㄢ', 'ˋ', ['店','電','墊','殿']),
-              ch('買', 'ㄇㄞ', 'ˇ', ['買','賣','邁','麥']),
-              ch('蛋', 'ㄉㄢ', 'ˋ', ['蛋','但','淡','誕']),
-              ch('餅', 'ㄅㄧㄥ', 'ˇ', ['餅','丙','秉','柄']),
-              ch('配', 'ㄆㄟ', 'ˋ', ['配','佩','倍','背']),
-              ch('溫', 'ㄨㄣ', 'ˉ', ['溫','瘟','文','聞']),
-              ch('豆', 'ㄉㄡ', 'ˋ', ['豆','逗','痘','鬥']),
-              ch('漿', 'ㄐㄧㄤ', 'ˉ', ['漿','將','江','薑'])
-            ]
+            id: 3, type: "字形檢測", scope: "小詩選",
+            title: "下列成語「驚ㄏㄨㄥˊ一瞥」的空格處，何者為正確國字？",
+            options: ["虹", "洪", "鴻", "紅"],
+            answer: "鴻",
+            explain: "「驚鴻一瞥」形容美人體態輕盈或匆匆看了一眼，用鳥字旁的「鴻」。"
           },
           {
-            chars: [
-              ch('公', 'ㄍㄨㄥ', 'ˉ', ['公','工','功','攻']),
-              ch('車', 'ㄔㄜ', 'ˉ', ['車','扯','徹','冊']),
-              ch('快', 'ㄎㄨㄞ', 'ˋ', ['快','塊','筷','會']),
-              ch('來', 'ㄌㄞ', 'ˊ', ['來','萊','賴','藍']),
-              ch('了', 'ㄌㄜ', '˙', ['了','樂','勒','肋']),
-              ch('趕', 'ㄍㄢ', 'ˇ', ['趕','敢','感','改']),
-              ch('快', 'ㄎㄨㄞ', 'ˋ', ['快','塊','筷','會']),
-              ch('排', 'ㄆㄞ', 'ˊ', ['排','牌','拍','派']),
-              ch('隊', 'ㄉㄨㄟ', 'ˋ', ['隊','對','兌','堆']),
-              ch('上', 'ㄕㄤ', 'ˋ', ['上','尚','讓','商']),
-              ch('車', 'ㄔㄜ', 'ˉ', ['車','扯','徹','冊'])
-            ]
+            id: 4, type: "字形檢測", scope: "小詩選",
+            title: "「這條線代表著命運的牽ㄅㄢˋ。」句中空格應填入哪一個字？",
+            options: ["絆", "伴", "拌", "叛"],
+            answer: "絆",
+            explain: "「牽絆」指牽連糾纏，受約束牽制，應寫作絞絲旁的「絆」。"
           },
           {
-            chars: [
-              ch('房', 'ㄈㄤ', 'ˊ', ['房','防','妨','放']),
-              ch('間', 'ㄐㄧㄢ', 'ˉ', ['間','肩','堅','尖']),
-              ch('的', 'ㄉㄜ', '˙', ['的','得','地','德']),
-              ch('垃', 'ㄌㄜ', 'ˋ', ['垃','樂','勒','熱']),
-              ch('圾', 'ㄙㄜ', 'ˋ', ['圾','色','澀','塞']),
-              ch('記', 'ㄐㄧ', 'ˋ', ['記','計','寄','季']),
-              ch('得', 'ㄉㄜ', '˙', ['得','的','德','地']),
-              ch('拿', 'ㄋㄚ', 'ˊ', ['拿','哪','那','納']),
-              ch('去', 'ㄑㄩ', 'ˋ', ['去','趣','區','取']),
-              ch('倒', 'ㄉㄠ', 'ˋ', ['倒','到','道','導'])
-            ]
+            id: 5, type: "字形檢測", scope: "小詩選",
+            title: "「玉不ㄓㄨㄛˊ，不成器。」句中空格應填入哪一個字？",
+            options: ["拙", "琢", "灼", "濁"],
+            answer: "琢",
+            explain: "「琢磨」指雕刻琢治玉石，引申為修飾鍛鍊，應寫作玉字旁的「琢」。"
           },
           {
-            chars: [
-              ch('連', 'ㄌㄧㄢ', 'ˊ', ['連','聯','蓮','憐']),
-              ch('假', 'ㄐㄧㄚ', 'ˋ', ['假','價','架','駕']),
-              ch('首', 'ㄕㄡ', 'ˇ', ['首','手','守','受']),
-              ch('日', 'ㄖ', 'ˋ', ['日','入','熱','肉']),
-              ch('國', 'ㄍㄨㄛ', 'ˊ', ['國','果','裹','鍋']),
-              ch('道', 'ㄉㄠ', 'ˋ', ['道','到','倒','導']),
-              ch('車', 'ㄔㄜ', 'ˉ', ['車','扯','徹','冊']),
-              ch('潮', 'ㄔㄠ', 'ˊ', ['潮','朝','嘲','巢']),
-              ch('湧', 'ㄩㄥ', 'ˇ', ['湧','勇','擁','永']),
-              ch('現', 'ㄒㄧㄢ', 'ˋ', ['現','線','縣','限'])
-            ]
+            id: 6, type: "核心文意", scope: "白靈〈跳水〉",
+            title: "白靈〈跳水〉一詩中寫道：「托住垂直的思考／下注」，句中的「下注」在詩中真正象徵的意涵為何？",
+            options: ["拿寶貴青春賭博，碰碰運氣", "為了奪得名次而冒險行事", "堅定無懼、全心全意地投身挑戰與抉擇", "因懼怕失敗而遲疑不決"],
+            answer: "堅定無懼、全心全意地投身挑戰與抉擇",
+            explain: "「下注」借用博弈用語，象徵跳水者鼓足勇氣、毫不猶豫地將生命投注於當下的抉擇中。"
           },
           {
-            chars: [
-              ch('搭', 'ㄉㄚ', 'ˉ', ['搭','答','達','打']),
-              ch('乘', 'ㄔㄥ', 'ˊ', ['乘','成','城','程']),
-              ch('高', 'ㄍㄠ', 'ˉ', ['高','糕','膏','羔']),
-              ch('鐵', 'ㄊㄧㄝ', 'ˇ', ['鐵','貼','帖','蝶']),
-              ch('請', 'ㄑㄧㄥ', 'ˇ', ['請','頃','清','情']),
-              ch('提', 'ㄊㄧ', 'ˊ', ['提','題','啼','蹄']),
-              ch('早', 'ㄗㄠ', 'ˇ', ['早','澡','找','棗']),
-              ch('進', 'ㄐㄧㄣ', 'ˋ', ['進','近','盡','禁']),
-              ch('站', 'ㄓㄢ', 'ˋ', ['站','戰','佔','暫']),
-              ch('候', 'ㄏㄡ', 'ˋ', ['候','後','厚','后']),
-              ch('車', 'ㄔㄜ', 'ˉ', ['車','扯','徹','冊'])
-            ]
+            id: 7, type: "空間動態", scope: "白靈〈跳水〉",
+            title: "〈跳水〉一詩巧妙藉由空間動態展現力與美，下列詩句的畫面順序排列，何者符合跳水過程？<br>甲、把幾步跳板擺渡成懸崖<br>乙、激起一片熱烈的掌聲<br>丙、湛藍晶瑩的波心<br>丁、翻飛如一弧亮麗的虹",
+            options: ["甲丁丙乙", "丁甲乙丙", "甲乙丙丁", "丙甲丁乙"],
+            answer: "甲丁丙乙",
+            explain: "排列過程：站在板緣蓄勢待發（甲）→ 躍起空中騰挪畫出彩虹弧線（丁）→ 筆直沒入藍色波心（丙）→ 贏得觀眾熱烈掌聲（乙）。"
           },
           {
-            chars: [
-              ch('東', 'ㄉㄨㄥ', 'ˉ', ['東','冬','懂','動']),
-              ch('北', 'ㄅㄟ', 'ˇ', ['北','背','杯','倍']),
-              ch('季', 'ㄐㄧ', 'ˋ', ['季','記','計','寄']),
-              ch('風', 'ㄈㄥ', 'ˉ', ['風','封','峰','瘋']),
-              ch('增', 'ㄗㄥ', 'ˉ', ['增','曾','爭','蒸']),
-              ch('強', 'ㄑㄧㄤ', 'ˊ', ['強','牆','薔','搶']),
-              ch('早', 'ㄗㄠ', 'ˇ', ['早','澡','找','棗']),
-              ch('晚', 'ㄨㄢ', 'ˇ', ['晚','碗','挽','玩']),
-              ch('注', 'ㄓㄨ', 'ˋ', ['注','住','助','祝']),
-              ch('意', 'ㄧ', 'ˋ', ['意','義','議','億']),
-              ch('保', 'ㄅㄠ', 'ˇ', ['保','寶','飽','堡']),
-              ch('暖', 'ㄋㄨㄢ', 'ˇ', ['暖','卵','軟','緩'])
-            ]
+            id: 8, type: "意象象徵", scope: "白靈〈風箏〉",
+            title: "白靈〈風箏〉中：「長長一生莫非這樣一場遊戲吧」，作者以「風箏」比喻人生，其中「長長的線」與「飛翔的風箏」最適合象徵什麼？",
+            options: ["牽絆包袱／自由夢想", "財富名利／虛榮浮華", "親情溫暖／孤獨無依", "讀書升學／休閒娛樂"],
+            answer: "牽絆包袱／自由夢想",
+            explain: "「風箏」渴望向青天展翅高飛（象徵夢想與自由），而「長線」連接著地面（象徵現實責任、牽掛與約束）。"
           },
           {
-            chars: [
-              ch('山', 'ㄕㄢ', 'ˉ', ['山','衫','刪','扇']),
-              ch('區', 'ㄑㄩ', 'ˉ', ['區','曲','屈','趨']),
-              ch('午', 'ㄨ', 'ˇ', ['午','五','舞','武']),
-              ch('後', 'ㄏㄡ', 'ˋ', ['後','候','厚','后']),
-              ch('容', 'ㄖㄨㄥ', 'ˊ', ['容','融','榮','絨']),
-              ch('易', 'ㄧ', 'ˋ', ['易','意','義','益']),
-              ch('有', 'ㄧㄡ', 'ˇ', ['有','友','酉','游']),
-              ch('短', 'ㄉㄨㄢ', 'ˇ', ['短','斷','段','鍛']),
-              ch('暫', 'ㄓㄢ', 'ˋ', ['暫','站','戰','佔']),
-              ch('陣', 'ㄓㄣ', 'ˋ', ['陣','鎮','震','振']),
-              ch('雨', 'ㄩ', 'ˇ', ['雨','語','羽','與'])
-            ]
+            id: 9, type: "修辭素養", scope: "小詩選",
+            title: "現代詩常運用意象來隱喻抽象哲理。下列何者「沒有」使用「映襯」修辭？",
+            options: ["只要給它一線希望，它就奮力向青天昂揚", "他以小小的身軀，激盪出巨大的喝采", "風箏在緊繃與放手之間，丈量著天空的寬度", "沿著陡峭的階梯，一步一步迎向晨曦的陽光"],
+            answer: "沿著陡峭的階梯，一步一步迎向晨曦的陽光",
+            explain: "前三項皆有對比映襯（一線vs青天、小小vs巨大、緊繃vs放手）；第四項僅為純粹敘事描寫。"
           },
           {
-            chars: [
-              ch('台', 'ㄊㄞ', 'ˊ', ['台','抬','颱','苔']),
-              ch('鐵', 'ㄊㄧㄝ', 'ˇ', ['鐵','貼','帖','蝶']),
-              ch('加', 'ㄐㄧㄚ', 'ˉ', ['加','家','佳','嘉']),
-              ch('開', 'ㄎㄞ', 'ˉ', ['開','揩','凱','慨']),
-              ch('連', 'ㄌㄧㄢ', 'ˊ', ['連','聯','蓮','憐']),
-              ch('假', 'ㄐㄧㄚ', 'ˋ', ['假','價','架','駕']),
-              ch('返', 'ㄈㄢ', 'ˇ', ['返','反','飯','範']),
-              ch('鄉', 'ㄒㄧㄤ', 'ˉ', ['鄉','香','相','箱']),
-              ch('加', 'ㄐㄧㄚ', 'ˉ', ['加','家','佳','嘉']),
-              ch('班', 'ㄅㄢ', 'ˉ', ['班','般','搬','斑']),
-              ch('列', 'ㄌㄧㄝ', 'ˋ', ['列','烈','裂','獵']),
-              ch('車', 'ㄔㄜ', 'ˉ', ['車','扯','徹','冊'])
-            ]
+            id: 10, type: "文體常識", scope: "現代詩常識",
+            title: "關於現代詩的文體常識，下列敘述何者「完全正確」？",
+            options: ["形式自由，字數、句數、押韻皆無嚴格限制，故又稱自由詩", "源自五四文學革命，因此每首詩都必須使用嚴格對仗", "每一首現代詩必定要在偶數句押韻，否則不能稱之為詩", "只要分行書寫的白話文字，就是優秀的現代詩歌"],
+            answer: "形式自由，字數、句數、押韻皆無嚴格限制，故又稱自由詩",
+            explain: "現代詩不拘平仄格律、不必對仗、可押韻亦可不押；且詩重在凝鍊意象與情思，非隨意分行即成好詩。"
           }
         ]
       },
       {
-        date: '10/24',
-        medalName: '樂活探索獎牌',
-        medalEmoji: '🛒',
-        sentences: [
+        id: 2,
+        name: "Day 2 · 古體詩選（庭中有奇樹、慈烏夜啼）",
+        badge: "第二課",
+        icon: "📜",
+        desc: "古詩十九首、白居易新樂府、古體詩格律與孝道寓意",
+        questions: [
           {
-            chars: [
-              ch('我', 'ㄨㄛ', 'ˇ', ['我','握','臥','沃']),
-              ch('們', 'ㄇㄣ', '˙', ['們','門','悶','捫']),
-              ch('一', 'ㄧ', 'ˉ', ['一','衣','醫','依']),
-              ch('起', 'ㄑㄧ', 'ˇ', ['起','企','啟','氣']),
-              ch('去', 'ㄑㄩ', 'ˋ', ['去','趣','區','取']),
-              ch('超', 'ㄔㄠ', 'ˉ', ['超','抄','鈔','吵']),
-              ch('市', 'ㄕ', 'ˋ', ['市','事','是','室']),
-              ch('買', 'ㄇㄞ', 'ˇ', ['買','賣','邁','麥']),
-              ch('水', 'ㄕㄨㄟ', 'ˇ', ['水','誰','髓','隨']),
-              ch('果', 'ㄍㄨㄛ', 'ˇ', ['果','國','裹','鍋'])
-            ]
+            id: 11, type: "字音字形", scope: "庭中有奇樹",
+            title: "「將以『遺』所思」句中的「遺」字，在此處標準注音為何？",
+            options: ["ㄨㄟˋ", "ㄧˊ", "ㄧˇ", "ㄨㄟˊ"],
+            answer: "ㄨㄟˋ",
+            explain: "「遺」在此處作動詞，意思是「贈送」，讀音為「ㄨㄟˋ」。"
           },
           {
-            chars: [
-              ch('午', 'ㄨ', 'ˇ', ['午','五','舞','武']),
-              ch('餐', 'ㄘㄢ', 'ˉ', ['餐','參','殘','蠶']),
-              ch('想', 'ㄒㄧㄤ', 'ˇ', ['想','響','享','向']),
-              ch('吃', 'ㄔ', 'ˉ', ['吃','癡','池','遲']),
-              ch('牛', 'ㄋㄧㄡ', 'ˊ', ['牛','扭','鈕','紐']),
-              ch('肉', 'ㄖㄡ', 'ˋ', ['肉','柔','揉','弱']),
-              ch('麵', 'ㄇㄧㄢ', 'ˋ', ['麵','面','棉','眠']),
-              ch('還', 'ㄏㄞ', 'ˊ', ['還','孩','海','害']),
-              ch('是', 'ㄕ', 'ˋ', ['是','事','市','試']),
-              ch('水', 'ㄕㄨㄟ', 'ˇ', ['水','誰','髓','隨']),
-              ch('餃', 'ㄐㄧㄠ', 'ˇ', ['餃','腳','角','攪'])
-            ]
+            id: 12, type: "字音字形", scope: "庭中有奇樹",
+            title: "「馨香盈懷『袖』」句中的「袖」字，標準注音為何？",
+            options: ["ㄒㄧㄡˋ", "ㄧㄡˋ", "ㄕㄨˋ", "ㄓㄨˊ"],
+            answer: "ㄒㄧㄡˋ",
+            explain: "「袖」注音為「ㄒㄧㄡˋ」，指衣袖。"
           },
           {
-            chars: [
-              ch('媽', 'ㄇㄚ', 'ˉ', ['媽','嗎','麻','馬']),
-              ch('媽', 'ㄇㄚ', '˙', ['媽','嗎','麻','馬']),
-              ch('煮', 'ㄓㄨ', 'ˇ', ['煮','主','組','祖']),
-              ch('了', 'ㄌㄜ', '˙', ['了','樂','勒','肋']),
-              ch('香', 'ㄒㄧㄤ', 'ˉ', ['香','鄉','相','箱']),
-              ch('噴', 'ㄆㄣ', 'ˉ', ['噴','盆','奔','本']),
-              ch('噴', 'ㄆㄣ', 'ˉ', ['噴','盆','奔','本']),
-              ch('的', 'ㄉㄜ', '˙', ['的','得','地','德']),
-              ch('咖', 'ㄎㄚ', 'ˉ', ['咖','卡','喀','咖']),
-              ch('哩', 'ㄌㄧ', 'ˇ', ['哩','里','理','禮']),
-              ch('飯', 'ㄈㄢ', 'ˋ', ['飯','犯','範','販'])
-            ]
+            id: 13, type: "字音字形", scope: "慈烏夜啼",
+            title: "「反『哺』報恩」句中的「哺」字，標準國語注音為何？",
+            options: ["ㄅㄨˇ", "ㄆㄨˇ", "ㄈㄨˇ", "ㄅㄨˋ"],
+            answer: "ㄅㄨˇ",
+            explain: "「反哺」注音為「ㄈㄢˇ ㄅㄨˇ」，指慈烏成鳥餵食雛烏，後比喻子女報答父母恩情。"
           },
           {
-            chars: [
-              ch('去', 'ㄑㄩ', 'ˋ', ['去','趣','區','取']),
-              ch('便', 'ㄅㄧㄢ', 'ˋ', ['便','變','遍','辨']),
-              ch('利', 'ㄌㄧ', 'ˋ', ['利','力','立','麗']),
-              ch('商', 'ㄕㄤ', 'ˉ', ['商','傷','湯','尚']),
-              ch('店', 'ㄉㄧㄢ', 'ˋ', ['店','電','墊','殿']),
-              ch('取', 'ㄑㄩ', 'ˇ', ['取','曲','娶','去']),
-              ch('貨', 'ㄏㄨㄛ', 'ˋ', ['貨','或','獲','禍']),
-              ch('順', 'ㄕㄨㄣ', 'ˋ', ['順','瞬','舜','順']),
-              ch('便', 'ㄅㄧㄢ', 'ˋ', ['便','變','遍','辨']),
-              ch('買', 'ㄇㄞ', 'ˇ', ['買','賣','邁','麥']),
-              ch('牛', 'ㄋㄧㄡ', 'ˊ', ['牛','扭','鈕','紐']),
-              ch('奶', 'ㄋㄞ', 'ˇ', ['奶','乃','耐','奈'])
-            ]
+            id: 14, type: "字形檢測", scope: "慈烏夜啼",
+            title: "「啞啞ㄊㄨˊ哀鳴」句中的空格，應填入哪一個字？",
+            options: ["徒", "塗", "圖", "途"],
+            answer: "徒",
+            explain: "「徒」在此處作副詞，表示「徒然、白白地」，故為「啞啞徒哀鳴」。"
           },
           {
-            chars: [
-              ch('老', 'ㄌㄠ', 'ˇ', ['老','佬','勞','牢']),
-              ch('闆', 'ㄅㄢ', 'ˇ', ['闆','板','版','辦']),
-              ch('請', 'ㄑㄧㄥ', 'ˇ', ['請','頃','清','情']),
-              ch('問', 'ㄨㄣ', 'ˋ', ['問','聞','紋','吻']),
-              ch('珍', 'ㄓㄣ', 'ˉ', ['珍','真','針','偵']),
-              ch('珠', 'ㄓㄨ', 'ˉ', ['珠','豬','株','朱']),
-              ch('奶', 'ㄋㄞ', 'ˇ', ['奶','乃','耐','奈']),
-              ch('茶', 'ㄔㄚ', 'ˊ', ['茶','查','察','叉']),
-              ch('半', 'ㄅㄢ', 'ˋ', ['半','伴','辦','扮']),
-              ch('糖', 'ㄊㄤ', 'ˊ', ['糖','堂','塘','唐']),
-              ch('少', 'ㄕㄠ', 'ˇ', ['少','掃','嫂','燒']),
-              ch('冰', 'ㄅㄧㄥ', 'ˉ', ['冰','兵','丙','餅'])
-            ]
+            id: 15, type: "字形檢測", scope: "慈烏夜啼",
+            title: "「他的情緒已經失控，令人感到ㄒㄧㄝ斯底里。」空格應填入哪一個字？",
+            options: ["歇", "街", "竭", "蝎"],
+            answer: "歇",
+            explain: "「歇斯底里」為外來語音譯，指情緒異常激動失控，用「歇」。"
           },
           {
-            chars: [
-              ch('人', 'ㄖㄣ', 'ˊ', ['人','仁','任','忍']),
-              ch('工', 'ㄍㄨㄥ', 'ˉ', ['工','公','功','攻']),
-              ch('智', 'ㄓ', 'ˋ', ['智','治','致','製']),
-              ch('慧', 'ㄏㄨㄟ', 'ˋ', ['慧','會','惠','匯']),
-              ch('科', 'ㄎㄜ', 'ˉ', ['科','顆','棵','殼']),
-              ch('技', 'ㄐㄧ', 'ˋ', ['技','記','計','季']),
-              ch('改', 'ㄍㄞ', 'ˇ', ['改','敢','感','趕']),
-              ch('變', 'ㄅㄧㄢ', 'ˋ', ['變','便','遍','辨']),
-              ch('未', 'ㄨㄟ', 'ˋ', ['未','位','味','為']),
-              ch('來', 'ㄌㄞ', 'ˊ', ['來','萊','賴','藍']),
-              ch('生', 'ㄕㄥ', 'ˉ', ['生','聲','升','勝']),
-              ch('活', 'ㄏㄨㄛ', 'ˊ', ['活','火','伙','獲'])
-            ]
+            id: 16, type: "詩意轉折", scope: "庭中有奇樹",
+            title: "〈庭中有奇樹〉中「此物何足貴？但感別經時」兩句的心境轉折為何？",
+            options: ["認為奇樹花朵太過普通，後悔採摘", "藉花寄情，因相隔迢遙無法送達，轉而感嘆別離長久", "責怪對方不懂花的美好，感到忿忿不平", "發現花已枯萎，只好自怨自艾"],
+            answer: "藉花寄情，因相隔迢遙無法送達，轉而感嘆別離長久",
+            explain: "「何足貴」是反詰語氣，並非花不珍貴，而是因為送不到愛人手中，進而觸動離別已久的深沉悲傷。"
           },
           {
-            chars: [
-              ch('自', 'ㄗ', 'ˋ', ['自','字','次','漬']),
-              ch('備', 'ㄅㄟ', 'ˋ', ['備','背','倍','被']),
-              ch('環', 'ㄏㄨㄢ', 'ˊ', ['環','還','換','緩']),
-              ch('保', 'ㄅㄠ', 'ˇ', ['保','寶','飽','堡']),
-              ch('杯', 'ㄅㄟ', 'ˉ', ['杯','悲','碑','背']),
-              ch('買', 'ㄇㄞ', 'ˇ', ['買','賣','邁','麥']),
-              ch('飲', 'ㄧㄣ', 'ˇ', ['飲','引','隱','印']),
-              ch('料', 'ㄌㄧㄠ', 'ˋ', ['料','廖','療','聊']),
-              ch('折', 'ㄓㄜ', 'ˊ', ['折','哲','責','則']),
-              ch('五', 'ㄨ', 'ˇ', ['五','午','舞','武']),
-              ch('元', 'ㄩㄢ', 'ˊ', ['元','園','員','原'])
-            ]
+            id: 17, type: "典故用意", scope: "白居易〈慈烏夜啼〉",
+            title: "白居易〈慈烏夜啼〉：「吳起疾親英，母歿喪不臨。嗟哉斯徒輩，其心不如禽。」詩人引用「吳起」的典故，主要用意為何？",
+            options: ["讚頌吳起專注事業、志向遠大", "說明戰國時期兵家殺伐的殘酷", "藉不孝之人反襯慈烏的孝心，諷刺忘本之徒", "提醒為人父母者不可過於嚴苛對待子女"],
+            answer: "藉不孝之人反襯慈烏的孝心，諷刺忘本之徒",
+            explain: "吳起在母親過世時未回家奔喪，白居易藉此反面典故諷刺世間不孝之徒連禽鳥都不如。"
           },
           {
-            chars: [
-              ch('醫', 'ㄧ', 'ˉ', ['醫','衣','依','一']),
-              ch('院', 'ㄩㄢ', 'ˋ', ['院','願','怨','遠']),
-              ch('提', 'ㄊㄧ', 'ˊ', ['提','題','啼','蹄']),
-              ch('醒', 'ㄒㄧㄥ', 'ˇ', ['醒','省','星','興']),
-              ch('民', 'ㄇㄧㄣ', 'ˊ', ['民','明','名','敏']),
-              ch('眾', 'ㄓㄨㄥ', 'ˋ', ['眾','重','種','中']),
-              ch('接', 'ㄐㄧㄝ', 'ˉ', ['接','街','階','皆']),
-              ch('種', 'ㄓㄨㄥ', 'ˋ', ['種','重','眾','中']),
-              ch('流', 'ㄌㄧㄡ', 'ˊ', ['流','留','劉','遊']),
-              ch('感', 'ㄍㄢ', 'ˇ', ['感','敢','趕','改']),
-              ch('疫', 'ㄧ', 'ˋ', ['疫','意','義','益']),
-              ch('苗', 'ㄇㄧㄠ', 'ˊ', ['苗','描','瞄','秒'])
-            ]
+            id: 18, type: "文意理解", scope: "古體詩選",
+            title: "下列古體詩詩句的文意解說，何者「正確」？",
+            options: ["「攀條折其榮」──描寫折斷枯枝準備生火取暖", "「馨香盈懷袖，路遠莫致之」──因為香味太濃烈，導致無法順利送達", "「晝夜不飛去，經年守故林」──表現慈烏痛失母親後久久不肯離去的悲痛哀思", "「應是母慈重，使爾悲不任」──認為是小烏鴉太脆弱，承受不了生活重擔"],
+            answer: "「晝夜不飛去，經年守故林」──表現慈烏痛失母親後久久不肯離去的悲痛哀思",
+            explain: "「晝夜不飛去，經年守故林」深刻描寫慈烏守喪盡孝、不捨離去的深情。"
           },
           {
-            chars: [
-              ch('手', 'ㄕㄡ', 'ˇ', ['手','首','守','受']),
-              ch('機', 'ㄐㄧ', 'ˉ', ['機','雞','積','基']),
-              ch('行', 'ㄒㄧㄥ', 'ˊ', ['行','形','型','刑']),
-              ch('動', 'ㄉㄨㄥ', 'ˋ', ['動','洞','凍','棟']),
-              ch('支', 'ㄓ', 'ˉ', ['支','知','隻','織']),
-              ch('付', 'ㄈㄨ', 'ˋ', ['付','富','副','父']),
-              ch('讓', 'ㄖㄤ', 'ˋ', ['讓','壤','嚷','攘']),
-              ch('結', 'ㄐㄧㄝ', 'ˊ', ['結','節','潔','捷']),
-              ch('帳', 'ㄓㄤ', 'ˋ', ['帳','脹','丈','杖']),
-              ch('更', 'ㄍㄥ', 'ˋ', ['更','耕','梗','庚']),
-              ch('快', 'ㄎㄨㄞ', 'ˋ', ['快','塊','筷','會']),
-              ch('速', 'ㄙㄨ', 'ˋ', ['速','素','訴','塑'])
-            ]
+            id: 19, type: "格律辨析", scope: "古體詩 vs 近體詩",
+            title: "關於「古體詩」與「近體詩（絕句、律詩）」的比較，下列何者正確？",
+            options: ["古體詩唐代才興起；近體詩漢魏六朝盛行", "古體詩句數不拘，多五、七言；近體詩字數句數嚴格固定", "古體詩必須一韻到底；近體詩中途可任意換韻", "古體詩每首詩嚴格講究平仄與對仗；近體詩則完全自由"],
+            answer: "古體詩句數不拘，多五、七言；近體詩字數句數嚴格固定",
+            explain: "古體詩句數不限、平仄對仗自由、可換韻；近體詩句數固定（絕句4句、律詩8句）、嚴守平仄、律詩中二聯必對仗。"
           },
           {
-            chars: [
-              ch('營', 'ㄧㄥ', 'ˊ', ['營','迎','贏','盈']),
-              ch('養', 'ㄧㄤ', 'ˇ', ['養','癢','仰','氧']),
-              ch('師', 'ㄕ', 'ˉ', ['師','詩','獅','施']),
-              ch('建', 'ㄐㄧㄢ', 'ˋ', ['建','見','件','健']),
-              ch('議', 'ㄧ', 'ˋ', ['議','意','義','益']),
-              ch('每', 'ㄇㄟ', 'ˇ', ['每','美','鎂','枚']),
-              ch('天', 'ㄊㄧㄢ', 'ˉ', ['天','添','篇','田']),
-              ch('多', 'ㄉㄨㄛ', 'ˉ', ['多','奪','朵','躲']),
-              ch('吃', 'ㄔ', 'ˉ', ['吃','癡','池','遲']),
-              ch('蔬', 'ㄕㄨ', 'ˉ', ['蔬','書','舒','輸']),
-              ch('果', 'ㄍㄨㄛ', 'ˇ', ['果','國','裹','鍋'])
-            ]
+            id: 20, type: "成語應用", scope: "孝道成語",
+            title: "下列成語皆與「孝道」或「父母」有關，何者使用「不當」？",
+            options: ["子女長大後當知「烏鳥私情」，盡心奉養雙親", "他長年在外奔波，心中常有「風木之思」，自責未能隨侍在側", "孝順父母應發自內心，不能只是虛應故事，否則便如「衣錦還鄉」", "父母恩重如山，為人子女若不知「反哺之恩」，實愧為人類"],
+            answer: "孝順父母應發自內心，不能只是虛應故事，否則便如「衣錦還鄉」",
+            explain: "「衣錦還鄉」指富貴後風光回鄉，與孝道內涵不符。「風木之思」比喻父母亡故未能奉養之悲痛思念。"
           }
         ]
       },
       {
-        date: '10/25',
-        medalName: '活力飛躍獎牌',
-        medalEmoji: '🏆',
-        sentences: [
+        id: 3,
+        name: "Day 3 · 土芭樂的生存之道",
+        badge: "第三課",
+        icon: "🍐",
+        desc: "劉克襄生態觀察、物我哲思、生存競爭與環境適應",
+        questions: [
           {
-            chars: [
-              ch('放', 'ㄈㄤ', 'ˋ', ['放','房','防','訪']),
-              ch('假', 'ㄐㄧㄚ', 'ˋ', ['假','價','架','駕']),
-              ch('去', 'ㄑㄩ', 'ˋ', ['去','趣','區','取']),
-              ch('公', 'ㄍㄨㄥ', 'ˉ', ['公','工','功','攻']),
-              ch('園', 'ㄩㄢ', 'ˊ', ['園','元','員','原']),
-              ch('散', 'ㄙㄢ', 'ˋ', ['散','傘','閃','善']),
-              ch('步', 'ㄅㄨ', 'ˋ', ['步','不','布','部']),
-              ch('流', 'ㄌㄧㄡ', 'ˊ', ['流','留','劉','牛']),
-              ch('汗', 'ㄏㄢ', 'ˋ', ['汗','漢','旱','和']),
-              ch('真', 'ㄓㄣ', 'ˉ', ['真','針','珍','偵']),
-              ch('舒', 'ㄕㄨ', 'ˉ', ['舒','書','輸','叔']),
-              ch('服', 'ㄈㄨ', 'ˊ', ['服','福','扶','浮'])
-            ]
+            id: 21, type: "字音字形", scope: "土芭樂的生存之道",
+            title: "「這顆土芭樂果肉『粗糙』，但風味迷人。」句中「糙」字的國語注音為何？",
+            options: ["ㄘㄠ", "ㄗㄠˋ", "ㄘㄠˋ", "ㄗㄠ"],
+            answer: "ㄘㄠ",
+            explain: "「粗糙」注音為「ㄘㄨ ㄘㄠ」，一聲。"
           },
           {
-            chars: [
-              ch('晚', 'ㄨㄢ', 'ˇ', ['晚','碗','挽','玩']),
-              ch('上', 'ㄕㄤ', 'ˋ', ['上','尚','讓','商']),
-              ch('和', 'ㄏㄢ', 'ˋ', ['和','汗','漢','旱']),
-              ch('朋', 'ㄆㄥ', 'ˊ', ['朋','棚','彭','捧']),
-              ch('友', 'ㄧㄡ', 'ˇ', ['友','有','酉','游']),
-              ch('相', 'ㄒㄧㄤ', 'ˉ', ['相','香','鄉','箱']),
-              ch('約', 'ㄩㄝ', 'ˉ', ['約','月','樂','越']),
-              ch('看', 'ㄎㄢ', 'ˋ', ['看','砍','刊','堪']),
-              ch('電', 'ㄉㄧㄢ', 'ˋ', ['電','店','墊','殿']),
-              ch('影', 'ㄧㄥ', 'ˇ', ['影','穎','迎','贏'])
-            ]
+            id: 22, type: "字音字形", scope: "土芭樂的生存之道",
+            title: "「在荒郊野『畦』邊，長著幾棵耐旱的植物。」句中「畦」字的國語注音為何？",
+            options: ["ㄑㄧˊ", "ㄍㄨㄟ", "ㄨㄚ", "ㄒㄧㄝˊ"],
+            answer: "ㄑㄧˊ",
+            explain: "「畦」注音為「ㄑㄧˊ」，指田地劃分的小區塊。"
           },
           {
-            chars: [
-              ch('下', 'ㄒㄧㄚ', 'ˋ', ['下','夏','嚇','廈']),
-              ch('午', 'ㄨ', 'ˇ', ['午','五','舞','武']),
-              ch('騎', 'ㄑㄧ', 'ˊ', ['騎','齊','期','棋']),
-              ch('腳', 'ㄐㄧㄠ', 'ˇ', ['腳','角','餃','攪']),
-              ch('踏', 'ㄊㄚ', 'ˋ', ['踏','榻','塌','它']),
-              ch('車', 'ㄔㄜ', 'ˉ', ['車','扯','徹','冊']),
-              ch('去', 'ㄑㄩ', 'ˋ', ['去','趣','區','取']),
-              ch('河', 'ㄏㄜ', 'ˊ', ['河','合','盒','何']),
-              ch('濱', 'ㄅㄧㄣ', 'ˉ', ['濱','賓','繽','冰']),
-              ch('兜', 'ㄉㄡ', 'ˉ', ['兜','都','豆','逗']),
-              ch('風', 'ㄈㄥ', 'ˉ', ['風','封','峰','瘋'])
-            ]
+            id: 23, type: "字音字形", scope: "土芭樂的生存之道",
+            title: "「土芭樂散發的芬芳，足以『媲』美高級進口水果。」句中「媲」字注音為何？",
+            options: ["ㄆㄧˋ", "ㄅㄧˋ", "ㄆㄟˋ", "ㄇㄧˇ"],
+            answer: "ㄆㄧˋ",
+            explain: "「媲美」注音為「ㄆㄧˋ ㄇㄟˇ」，指比美、並駕齊驅。"
           },
           {
-            chars: [
-              ch('全', 'ㄑㄩㄢ', 'ˊ', ['全','泉','拳','權']),
-              ch('家', 'ㄐㄧㄚ', 'ˉ', ['家','加','佳','嘉']),
-              ch('人', 'ㄖㄣ', 'ˊ', ['人','仁','任','忍']),
-              ch('一', 'ㄧ', 'ˉ', ['一','衣','醫','依']),
-              ch('起', 'ㄑㄧ', 'ˇ', ['起','企','啟','氣']),
-              ch('去', 'ㄑㄩ', 'ˋ', ['去','趣','區','取']),
-              ch('郊', 'ㄐㄧㄠ', 'ˉ', ['郊','交','膠','教']),
-              ch('外', 'ㄨㄞ', 'ˋ', ['外','歪','萬','碗']),
-              ch('露', 'ㄌㄨ', 'ˋ', ['露','路','鹿','錄']),
-              ch('營', 'ㄧㄥ', 'ˊ', ['營','迎','贏','盈']),
-              ch('烤', 'ㄎㄠ', 'ˇ', ['烤','考','拷','靠']),
-              ch('肉', 'ㄖㄡ', 'ˋ', ['肉','柔','揉','弱'])
-            ]
+            id: 24, type: "字形檢測", scope: "土芭樂的生存之道",
+            title: "「每個人都有尊嚴，不該受到任何歧視與偏見。」句中「ㄑㄧˊ視」之國字為？",
+            options: ["歧", "岐", "其", "旗"],
+            answer: "歧",
+            explain: "「歧視」是指不平等的對待，用止字旁的「歧」。"
           },
           {
-            chars: [
-              ch('運', 'ㄩㄣ', 'ˋ', ['運','孕','韻','熨']),
-              ch('動', 'ㄉㄨㄥ', 'ˋ', ['動','洞','凍','棟']),
-              ch('後', 'ㄏㄡ', 'ˋ', ['後','候','厚','后']),
-              ch('記', 'ㄐㄧ', 'ˋ', ['記','計','寄','季']),
-              ch('得', 'ㄉㄜ', '˙', ['得','的','德','地']),
-              ch('補', 'ㄅㄨ', 'ˇ', ['補','捕','哺','步']),
-              ch('充', 'ㄔㄨㄥ', 'ˉ', ['充','衝','沖','聰']),
-              ch('水', 'ㄕㄨㄟ', 'ˇ', ['水','誰','髓','隨']),
-              ch('分', 'ㄈㄣ', 'ˋ', ['分','份','奮','憤']),
-              ch('和', 'ㄏㄢ', 'ˋ', ['和','汗','漢','旱']),
-              ch('休', 'ㄒㄧㄡ', 'ˉ', ['休','修','羞','朽']),
-              ch('息', 'ㄒㄧ', 'ˊ', ['息','習','席','惜'])
-            ]
+            id: 25, type: "字形檢測", scope: "土芭樂的生存之道",
+            title: "「一場突如其來的暴雨，讓他顯得狼ㄅㄟˋ不堪。」空格應填入哪一個字？",
+            options: ["狽", "被", "備", "倍"],
+            answer: "狽",
+            explain: "「狼狽」指窘迫疲累的樣子，用犬字旁的「狽」。"
           },
           {
-            chars: [
-              ch('中', 'ㄓㄨㄥ', 'ˉ', ['中','鐘','忠','終']),
-              ch('華', 'ㄏㄨㄚ', 'ˊ', ['華','滑','划','花']),
-              ch('隊', 'ㄉㄨㄟ', 'ˋ', ['隊','對','兌','堆']),
-              ch('選', 'ㄒㄩㄢ', 'ˇ', ['選','癬','宣','懸']),
-              ch('手', 'ㄕㄡ', 'ˇ', ['手','首','守','受']),
-              ch('在', 'ㄗㄞ', 'ˋ', ['在','再','載','哉']),
-              ch('國', 'ㄍㄨㄛ', 'ˊ', ['國','果','裹','鍋']),
-              ch('際', 'ㄐㄧ', 'ˋ', ['際','記','計','季']),
-              ch('比', 'ㄅㄧ', 'ˇ', ['比','筆','彼','必']),
-              ch('賽', 'ㄙㄞ', 'ˋ', ['賽','曬','塞','腮']),
-              ch('奪', 'ㄉㄨㄛ', 'ˊ', ['奪','多','朵','躲']),
-              ch('冠', 'ㄍㄨㄢ', 'ˋ', ['冠','慣','罐','觀'])
-            ]
+            id: 26, type: "文本理解", scope: "土芭樂的生存之道",
+            title: "劉克襄在文中提到土芭樂「果肉澀硬、種籽又硬又多」，卻能在自然界世代繁衍，其關鍵生存策略為何？",
+            options: ["靠農夫細心噴灑農藥與溫室呵護", "改良果肉甜脆多汁，吸引人類採摘種植", "借助鳥類喜食並藉其糞便傳播種子，且具備耐貧瘠逆境的頑強韌性", "靠豔麗的花朵吸引蜜蜂大量授粉以排擠其他植物"],
+            answer: "借助鳥類喜食並藉其糞便傳播種子，且具備耐貧瘠逆境的頑強韌性",
+            explain: "土芭樂不靠人工育種嬌養，而是演化出耐酸旱、種子硬不易被鳥胃磨碎的傳播生存機制。"
           },
           {
-            chars: [
-              ch('文', 'ㄨㄣ', 'ˊ', ['文','聞','蚊','紋']),
-              ch('化', 'ㄏㄨㄚ', 'ˋ', ['化','話','畫','花']),
-              ch('園', 'ㄩㄢ', 'ˊ', ['園','元','員','原']),
-              ch('區', 'ㄑㄩ', 'ˉ', ['區','曲','屈','趨']),
-              ch('舉', 'ㄐㄩ', 'ˇ', ['舉','矩','局','句']),
-              ch('辦', 'ㄅㄢ', 'ˋ', ['辦','半','伴','扮']),
-              ch('假', 'ㄐㄧㄚ', 'ˋ', ['假','價','架','駕']),
-              ch('日', 'ㄖ', 'ˋ', ['日','入','熱','肉']),
-              ch('音', 'ㄧㄣ', 'ˉ', ['音','因','陰','應']),
-              ch('樂', 'ㄩㄝ', 'ˋ', ['樂','月','越','躍']),
-              ch('市', 'ㄕ', 'ˋ', ['市','事','是','室']),
-              ch('集', 'ㄐㄧ', 'ˊ', ['集','急','級','極'])
-            ]
+            id: 27, type: "寫作旨趣", scope: "土芭樂的生存之道",
+            title: "本文將「改良種芭樂」與「野生土芭樂」進行對比，主要用意在傳達何種生命哲思？",
+            options: ["外表光鮮亮麗者，通常內在更具生存適應力", "溫室花朵雖誘人，但在嚴苛逆境中，樸實而頑強的生命力才最可貴", "農業技術改良是破壞生態平衡的唯一元凶", "人類應徹底拒絕食用任何經過品種改良的水果"],
+            answer: "溫室花朵雖誘人，但在嚴苛逆境中，樸實而頑強的生命力才最可貴",
+            explain: "作者借物抒懷，從土芭樂的生存韌性映照人生哲理：真實的實力來自於逆境中的扎根與磨練。"
           },
           {
-            chars: [
-              ch('圖', 'ㄊㄨ', 'ˊ', ['圖','塗','途','徒']),
-              ch('書', 'ㄕㄨ', 'ˉ', ['書','舒','輸','叔']),
-              ch('館', 'ㄍㄨㄢ', 'ˇ', ['館','管','廣','關']),
-              ch('推', 'ㄊㄨㄟ', 'ˉ', ['推','吹','腿','退']),
-              ch('出', 'ㄔㄨ', 'ˉ', ['出','初','除','廚']),
-              ch('數', 'ㄕㄨ', 'ˋ', ['數','樹','術','述']),
-              ch('位', 'ㄨㄟ', 'ˋ', ['位','未','味','為']),
-              ch('閱', 'ㄩㄝ', 'ˋ', ['閱','月','越','樂']),
-              ch('讀', 'ㄉㄨ', 'ˊ', ['讀','獨','毒','肚']),
-              ch('新', 'ㄒㄧㄣ', 'ˉ', ['新','心','辛','薪']),
-              ch('服', 'ㄈㄨ', 'ˊ', ['服','福','扶','浮']),
-              ch('務', 'ㄨ', 'ˋ', ['務','物','誤','霧'])
-            ]
+            id: 28, type: "寫作手法", scope: "土芭樂的生存之道",
+            title: "下列關於本文寫作手法的敘述，何者說明「完全正確」？",
+            options: ["「它矮小、粗壯，任憑風吹雨打依然牢固」──運用動態白描，強調植物的脆弱無依", "「像個滿臉雀斑卻活力充沛的鄉下野孩子」──使用轉化（擬物）手法描摹芭樂葉", "藉由芭樂的演化特徵聯想人生的生存競爭──屬於「借物抒懷／物我對照」的手法", "全篇大量引用艱澀的文言典故以凸顯歷史滄桑感"],
+            answer: "藉由芭樂的演化特徵聯想人生的生存競爭──屬於「借物抒懷／物我對照」的手法",
+            explain: "作者以生態記敘結合哲思感悟，正是借物抒懷的典型手法。"
           },
           {
-            chars: [
-              ch('台', 'ㄊㄞ', 'ˊ', ['台','抬','颱','苔']),
-              ch('北', 'ㄅㄟ', 'ˇ', ['北','背','杯','倍']),
-              ch('大', 'ㄉㄚ', 'ˋ', ['大','代','帶','待']),
-              ch('巨', 'ㄐㄩ', 'ˋ', ['巨','句','具','劇']),
-              ch('蛋', 'ㄉㄢ', 'ˋ', ['蛋','但','淡','誕']),
-              ch('吸', 'ㄒㄧ', 'ˉ', ['吸','西','希','惜']),
-              ch('引', 'ㄧㄣ', 'ˇ', ['引','飲','隱','印']),
-              ch('滿', 'ㄇㄢ', 'ˇ', ['滿','瞞','饅','慢']),
-              ch('滿', 'ㄇㄢ', 'ˇ', ['滿','瞞','饅','慢']),
-              ch('看', 'ㄎㄢ', 'ˋ', ['看','砍','刊','堪']),
-              ch('球', 'ㄑㄧㄡ', 'ˊ', ['球','求','秋','丘']),
-              ch('人', 'ㄖㄣ', 'ˊ', ['人','仁','任','忍']),
-              ch('潮', 'ㄔㄠ', 'ˊ', ['潮','朝','嘲','巢'])
-            ]
+            id: 29, type: "錯字辨析", scope: "土芭樂的生存之道",
+            title: "閱讀下列文句，何者用字完全「沒有」錯別字？",
+            options: ["他個性堅毅，即使身處惡劣窘竟，依然能傲然挺立", "土芭樂在鄉野間隨遇而安，散發著獨樹一幟的草莽氣息", "經過這番嚴酷淬鍊，他的心智已變得越發沉穩與成熱", "面對外來物種的侵襲，原生植物正面臨著前所末有的危機"],
+            answer: "土芭樂在鄉野間隨遇而安，散發著獨樹一幟的草莽氣息",
+            explain: "(A) 窘「竟」→ 境；(C) 成「熱」→ 熟；(D) 前所「末」有 → 未。"
           },
           {
-            chars: [
-              ch('國', 'ㄍㄨㄛ', 'ˊ', ['國','果','裹','鍋']),
-              ch('家', 'ㄐㄧㄚ', 'ˉ', ['家','加','佳','嘉']),
-              ch('音', 'ㄧㄣ', 'ˉ', ['音','因','陰','應']),
-              ch('樂', 'ㄩㄝ', 'ˋ', ['樂','月','越','躍']),
-              ch('廳', 'ㄊㄧㄥ', 'ˉ', ['廳','聽','汀','停']),
-              ch('週', 'ㄓㄡ', 'ˉ', ['週','周','洲','粥']),
-              ch('末', 'ㄇㄛ', 'ˋ', ['末','莫','默','墨']),
-              ch('演', 'ㄧㄢ', 'ˇ', ['演','眼','掩','炎']),
-              ch('出', 'ㄔㄨ', 'ˉ', ['出','初','除','廚']),
-              ch('精', 'ㄐㄧㄥ', 'ˉ', ['精','晶','驚','經']),
-              ch('彩', 'ㄘㄞ', 'ˇ', ['彩','採','踩','才']),
-              ch('交', 'ㄐㄧㄠ', 'ˉ', ['交','郊','膠','教']),
-              ch('響', 'ㄒㄧㄤ', 'ˇ', ['響','想','享','向']),
-              ch('樂', 'ㄩㄝ', 'ˋ', ['樂','月','越','躍'])
-            ]
+            id: 30, type: "詞義替換", scope: "土芭樂的生存之道",
+            title: "下列各句「」中的詞語，何者抽換後文意「改變」？",
+            options: ["它的生命力極其「頑強」／堅韌", "在這片「貧瘠」的丘陵上生根／肥沃", "其散發的特殊香氣「令人難忘」／難以忘懷", "它懂得「因應」環境的變化而調整生長／順應"],
+            answer: "在這片「貧瘠」的丘陵上生根／肥沃",
+            explain: "「貧瘠」指土地缺乏養分不肥沃，抽換為「肥沃」意思完全相反。"
           }
         ]
       },
       {
-        date: '10/26',
-        medalName: '滿載榮耀獎牌',
-        medalEmoji: '🌟',
-        sentences: [
+        id: 4,
+        name: "Day 4 · 語文天地（一）詞類 ＆ 總決戰",
+        badge: "語文常識",
+        icon: "🏛️",
+        desc: "實詞虛詞辨析、轉品修辭、跨課綜合素養題",
+        questions: [
           {
-            chars: [
-              ch('睡', 'ㄕㄨㄟ', 'ˋ', ['睡','稅','歲','碎']),
-              ch('前', 'ㄑㄧㄢ', 'ˊ', ['前','錢','乾','潛']),
-              ch('把', 'ㄅㄚ', 'ˇ', ['把','靶','爸','吧']),
-              ch('書', 'ㄕㄨ', 'ˉ', ['書','舒','輸','叔']),
-              ch('包', 'ㄅㄠ', 'ˉ', ['包','胞','褒','飽']),
-              ch('和', 'ㄏㄢ', 'ˋ', ['和','汗','漢','旱']),
-              ch('衣', 'ㄧ', 'ˉ', ['衣','醫','依','一']),
-              ch('服', 'ㄈㄨ', 'ˊ', ['服','福','扶','浮']),
-              ch('整', 'ㄓㄥ', 'ˇ', ['整','拯','正','爭']),
-              ch('理', 'ㄌㄧ', 'ˇ', ['理','裡','禮','李']),
-              ch('好', 'ㄏㄠ', 'ˇ', ['好','號','耗','郝'])
-            ]
+            id: 31, type: "詞性辨析", scope: "語法詞類",
+            title: "「攀條折其『榮』」句中的「榮」字，屬於哪一種詞性？",
+            options: ["名詞（繁花、花朵）", "形容詞（光榮的）", "動詞（茂盛繁榮）", "副詞（欣然地）"],
+            answer: "名詞（繁花、花朵）",
+            explain: "「榮」本為形容詞（草木茂盛），在此處轉為名詞，指「開盛的花朵」。"
           },
           {
-            chars: [
-              ch('感', 'ㄍㄢ', 'ˇ', ['感','敢','趕','改']),
-              ch('謝', 'ㄒㄧㄝ', 'ˋ', ['謝','蟹','卸','屑']),
-              ch('連', 'ㄌㄧㄢ', 'ˊ', ['連','聯','蓮','憐']),
-              ch('假', 'ㄐㄧㄚ', 'ˋ', ['假','價','架','駕']),
-              ch('期', 'ㄑㄧ', 'ˊ', ['期','齊','騎','棋']),
-              ch('間', 'ㄐㄧㄢ', 'ˉ', ['間','肩','堅','尖']),
-              ch('辛', 'ㄒㄧㄣ', 'ˉ', ['辛','新','心','薪']),
-              ch('苦', 'ㄎㄨ', 'ˇ', ['苦','庫','褲','酷']),
-              ch('工', 'ㄍㄨㄥ', 'ˉ', ['工','公','功','攻']),
-              ch('作', 'ㄗㄨㄛ', 'ˋ', ['作','做','坐','座']),
-              ch('的', 'ㄉㄜ', '˙', ['的','得','地','德']),
-              ch('人', 'ㄖㄣ', 'ˊ', ['人','仁','任','忍'])
-            ]
+            id: 32, type: "詞性辨析", scope: "語法詞類",
+            title: "「庭中有『奇』樹」句中的「奇」字，屬於哪一種詞性？",
+            options: ["名詞", "形容詞", "動詞", "副詞"],
+            answer: "形容詞",
+            explain: "「奇」用來修飾後面的名詞「樹」，意思是「稀奇美麗的」，為形容詞。"
           },
           {
-            chars: [
-              ch('定', 'ㄉㄧㄥ', 'ˋ', ['定','訂','錠','頂']),
-              ch('好', 'ㄏㄠ', 'ˇ', ['好','號','耗','郝']),
-              ch('鬧', 'ㄋㄠ', 'ˋ', ['鬧','腦','惱','繞']),
-              ch('鐘', 'ㄓㄨㄥ', 'ˉ', ['鐘','中','忠','終']),
-              ch('明', 'ㄇㄧㄥ', 'ˊ', ['明','名','民','鳴']),
-              ch('天', 'ㄊㄧㄢ', 'ˉ', ['天','添','篇','田']),
-              ch('早', 'ㄗㄠ', 'ˇ', ['早','澡','找','棗']),
-              ch('上', 'ㄕㄤ', 'ˋ', ['上','尚','讓','商']),
-              ch('準', 'ㄓㄨㄣ', 'ˇ', ['準','准','純','蠢']),
-              ch('時', 'ㄕ', 'ˊ', ['時','十','石','實']),
-              ch('起', 'ㄑㄧ', 'ˇ', ['起','企','啟','氣']),
-              ch('床', 'ㄔㄨㄤ', 'ˊ', ['床','窗','闖','創'])
-            ]
+            id: 33, type: "詞性辨析", scope: "語法詞類",
+            title: "「風箏『朝』向青天奮力昂揚」句中的「朝」字，屬於哪一種詞性？",
+            options: ["名詞", "動詞", "介詞（引進方向）", "助詞"],
+            answer: "介詞（引進方向）",
+            explain: "「朝」引進動作的方向（朝向青天），屬於介詞。"
           },
           {
-            chars: [
-              ch('幫', 'ㄅㄤ', 'ˉ', ['幫','邦','綁','棒']),
-              ch('忙', 'ㄇㄤ', 'ˊ', ['忙','盲','茫','芒']),
-              ch('做', 'ㄗㄨㄛ', 'ˋ', ['做','作','坐','座']),
-              ch('家', 'ㄐㄧㄚ', 'ˉ', ['家','加','佳','嘉']),
-              ch('事', 'ㄕ', 'ˋ', ['事','是','市','試']),
-              ch('把', 'ㄅㄚ', 'ˇ', ['把','靶','爸','吧']),
-              ch('地', 'ㄉㄧ', 'ˋ', ['地','弟','第','帝']),
-              ch('板', 'ㄅㄢ', 'ˇ', ['板','版','闆','辦']),
-              ch('擦', 'ㄘㄚ', 'ˉ', ['擦','差','插','叉']),
-              ch('乾', 'ㄍㄢ', 'ˉ', ['乾','甘','肝','竿']),
-              ch('淨', 'ㄐㄧㄥ', 'ˋ', ['淨','靜','敬','鏡'])
-            ]
+            id: 34, type: "詞性辨析", scope: "語法詞類",
+            title: "「長長一生『莫非』這樣一場遊戲吧」句中的「莫非」屬於何種詞性？",
+            options: ["副詞（表示推測、反詰）", "動詞", "形容詞", "介詞"],
+            answer: "副詞（表示推測、反詰）",
+            explain: "「莫非」用來修飾語氣，帶有「難道不是」的推測疑問語氣，屬於副詞。"
           },
           {
-            chars: [
-              ch('充', 'ㄔㄨㄥ', 'ˉ', ['充','衝','沖','聰']),
-              ch('飽', 'ㄅㄠ', 'ˇ', ['飽','保','寶','堡']),
-              ch('電', 'ㄉㄧㄢ', 'ˋ', ['電','店','墊','殿']),
-              ch('迎', 'ㄧㄥ', 'ˊ', ['迎','贏','盈','營']),
-              ch('接', 'ㄐㄧㄝ', 'ˉ', ['接','街','階','皆']),
-              ch('明', 'ㄇㄧㄥ', 'ˊ', ['明','名','民','鳴']),
-              ch('天', 'ㄊㄧㄢ', 'ˉ', ['天','添','篇','田']),
-              ch('全', 'ㄑㄩㄢ', 'ˊ', ['全','泉','拳','權']),
-              ch('新', 'ㄒㄧㄣ', 'ˉ', ['新','心','辛','薪']),
-              ch('的', 'ㄉㄜ', '˙', ['的','得','地','德']),
-              ch('挑', 'ㄊㄧㄠ', 'ˇ', ['挑','跳','條','調']),
-              ch('戰', 'ㄓㄢ', 'ˋ', ['戰','站','佔','暫'])
-            ]
+            id: 35, type: "詞性辨析", scope: "語法詞類",
+            title: "「陽光『溫柔』地撫摸大地」句中的「溫柔」在此處作何種詞性？",
+            options: ["名詞", "動詞", "形容詞", "副詞（修飾動詞撫摸）"],
+            answer: "副詞（修飾動詞撫摸）",
+            explain: "「溫柔」加上「地」修飾後方的動詞「撫摸」，作副詞（情態副詞）。"
           },
           {
-            chars: [
-              ch('不', 'ㄅㄨ', 'ˋ', ['不','步','布','部']),
-              ch('明', 'ㄇㄧㄥ', 'ˊ', ['明','名','民','鳴']),
-              ch('簡', 'ㄐㄧㄢ', 'ˇ', ['簡','剪','減','檢']),
-              ch('訊', 'ㄒㄩㄣ', 'ˋ', ['訊','訓','迅','遜']),
-              ch('連', 'ㄌㄧㄢ', 'ˊ', ['連','聯','蓮','憐']),
-              ch('結', 'ㄐㄧㄝ', 'ˊ', ['結','節','潔','捷']),
-              ch('千', 'ㄑㄧㄢ', 'ˉ', ['千','牽','鉛','謙']),
-              ch('萬', 'ㄨㄢ', 'ˋ', ['萬','腕','玩','晚']),
-              ch('不', 'ㄅㄨ', 'ˋ', ['不','步','布','部']),
-              ch('要', 'ㄧㄠ', 'ˋ', ['要','藥','耀','鑰']),
-              ch('點', 'ㄉㄧㄢ', 'ˇ', ['點','典','碘','店']),
-              ch('擊', 'ㄐㄧ', 'ˊ', ['擊','急','集','極'])
-            ]
+            id: 36, type: "詞性對比", scope: "詞性家族",
+            title: "下列各組「」中的字，何者詞性「前後完全相同」？",
+            options: ["「風」箏在天空中隨「風」起伏", "她「寶貝」著父母送給她的「寶貝」手鍊", "慈烏「夜」啼／漫長寂靜的黑「夜」", "「白」日依山盡／「白」白浪費了一整天時光"],
+            answer: "「風」箏在天空中隨「風」起伏",
+            explain: "(A) 皆為名詞；(B) 動詞（珍視）／名詞（珍寶）；(C) 副詞（在夜間）／名詞（夜晚）；(D) 形容詞（明亮耀眼）／副詞（徒然）。"
           },
           {
-            chars: [
-              ch('綠', 'ㄌㄩ', 'ˋ', ['綠','律','慮','率']),
-              ch('色', 'ㄙㄜ', 'ˋ', ['色','瑟','塞','設']),
-              ch('能', 'ㄋㄥ', 'ˊ', ['能','農','濃','弄']),
-              ch('源', 'ㄩㄢ', 'ˊ', ['源','原','員','園']),
-              ch('帶', 'ㄉㄞ', 'ˋ', ['帶','代','袋','待']),
-              ch('動', 'ㄉㄨㄥ', 'ˋ', ['動','洞','凍','棟']),
-              ch('產', 'ㄔㄢ', 'ˇ', ['產','鏟','闡','慘']),
-              ch('業', 'ㄧㄝ', 'ˋ', ['業','頁','夜','葉']),
-              ch('永', 'ㄩㄥ', 'ˇ', ['永','勇','湧','泳']),
-              ch('續', 'ㄒㄩ', 'ˋ', ['續','序','敘','蓄']),
-              ch('發', 'ㄈㄚ', 'ˉ', ['發','花','法','罰']),
-              ch('展', 'ㄓㄢ', 'ˇ', ['展','斬','盞','站'])
-            ]
+            id: 37, type: "修辭辨析", scope: "轉品修辭",
+            title: "「轉品」是指一個詞在語句中改變原本詞性。下列何者「沒有」使用轉品修辭？",
+            options: ["綠葉發「華」滋（名詞轉動詞，開花）", "「雲」遊四海，放浪形骸（名詞轉副詞，如雲般）", "扶「搖」直上九萬里（名詞，旋風）", "歲月白髮「老」了容顏（形容詞轉動詞，使……衰老）"],
+            answer: "扶「搖」直上九萬里（名詞，旋風）",
+            explain: "「扶搖」是雙聲聯綿名詞，指自下而上的暴風，此處維持名詞詞性，未轉品。"
           },
           {
-            chars: [
-              ch('太', 'ㄊㄞ', 'ˋ', ['太','態','泰','汰']),
-              ch('空', 'ㄎㄨㄥ', 'ˉ', ['空','控','孔','恐']),
-              ch('衛', 'ㄨㄟ', 'ˋ', ['衛','位','未','味']),
-              ch('星', 'ㄒㄧㄥ', 'ˉ', ['星','興','心','新']),
-              ch('成', 'ㄔㄥ', 'ˊ', ['成','城','程','乘']),
-              ch('功', 'ㄍㄨㄥ', 'ˉ', ['功','工','公','攻']),
-              ch('發', 'ㄈㄚ', 'ˉ', ['發','花','法','罰']),
-              ch('射', 'ㄕㄜ', 'ˋ', ['射','設','社','舍']),
-              ch('傳', 'ㄔㄨㄢ', 'ˊ', ['傳','船','喘','串']),
-              ch('回', 'ㄏㄨㄟ', 'ˊ', ['回','會','匯','毀']),
-              ch('影', 'ㄧㄥ', 'ˇ', ['影','穎','迎','贏']),
-              ch('像', 'ㄒㄧㄤ', 'ˋ', ['像','向','象','項'])
-            ]
+            id: 38, type: "跨域常識", scope: "文化常識",
+            title: "讀完白居易〈慈烏夜啼〉後，小明想深入研讀古代專門論述孝道哲理的經典，下列哪一本典籍「最為適合」？",
+            options: ["《世說新語》──記敘魏晉名士言行風貌", "《孝經》──闡述儒家孝道理念與具體實踐", "《山海經》──記載古代神話地理奇物", "《水滸傳》──描寫梁山泊綠林好漢故事"],
+            answer: "《孝經》──闡述儒家孝道理念與具體實踐",
+            explain: "《孝經》是儒家十三經之一，專門闡釋孝順德行與治國哲學。"
           },
           {
-            chars: [
-              ch('台', 'ㄊㄞ', 'ˊ', ['台','抬','颱','苔']),
-              ch('灣', 'ㄨㄢ', 'ˉ', ['灣','彎','玩','完']),
-              ch('半', 'ㄅㄢ', 'ˋ', ['半','伴','辦','扮']),
-              ch('導', 'ㄉㄠ', 'ˇ', ['導','島','倒','禱']),
-              ch('體', 'ㄊㄧ', 'ˇ', ['體','題','提','替']),
-              ch('晶', 'ㄐㄧㄥ', 'ˉ', ['晶','精','驚','經']),
-              ch('片', 'ㄆㄧㄢ', 'ˋ', ['片','騙','遍','偏']),
-              ch('技', 'ㄐㄧ', 'ˋ', ['技','記','計','季']),
-              ch('術', 'ㄕㄨ', 'ˋ', ['術','數','樹','述']),
-              ch('領', 'ㄌㄧㄥ', 'ˇ', ['領','嶺','零','鈴']),
-              ch('先', 'ㄒㄧㄢ', 'ˉ', ['先','鮮','仙','掀']),
-              ch('全', 'ㄑㄩㄢ', 'ˊ', ['全','泉','拳','權']),
-              ch('球', 'ㄑㄧㄡ', 'ˊ', ['球','求','秋','丘'])
-            ]
+            id: 39, type: "閱讀素養", scope: "白靈現代詩延伸",
+            title: "請閱讀白靈的另一首小詩：「只剪了一刀／便把一塊頑石／剪成兩尊默然相對的／佛」，這首詩的核心意旨與下列何者最為接近？",
+            options: ["慨嘆大自然風化侵蝕的無情與殘酷", "歌頌雕刻或剪紙藝術化腐朽為神奇的匠心與禪趣", "說明宗教信仰能讓躁動的人心沉靜安詳", "批判人類任意破壞山林岩石生態"],
+            answer: "歌頌雕刻或剪紙藝術化腐朽為神奇的匠心與禪趣",
+            explain: "詩中藉由「剪了一刀」的簡約動作，把「頑石」化為充滿靈性的「佛像」，讚美藝術家點石成金的巧思與哲理。"
           },
           {
-            chars: [
-              ch('收', 'ㄕㄡ', 'ˉ', ['收','手','首','守']),
-              ch('假', 'ㄐㄧㄚ', 'ˋ', ['假','價','架','駕']),
-              ch('車', 'ㄔㄜ', 'ˉ', ['車','扯','徹','冊']),
-              ch('流', 'ㄌㄧㄡ', 'ˊ', ['流','留','劉','遊']),
-              ch('順', 'ㄕㄨㄣ', 'ˋ', ['順','瞬','舜','順']),
-              ch('暢', 'ㄔㄤ', 'ˋ', ['暢','唱','倡','場']),
-              ch('平', 'ㄆㄧㄥ', 'ˊ', ['平','瓶','蘋','評']),
-              ch('安', 'ㄢ', 'ˉ', ['安','鞍','氨','庵']),
-              ch('回', 'ㄏㄨㄟ', 'ˊ', ['回','會','匯','毀']),
-              ch('到', 'ㄉㄠ', 'ˋ', ['到','道','倒','導']),
-              ch('溫', 'ㄨㄣ', 'ˉ', ['溫','瘟','文','聞']),
-              ch('暖', 'ㄋㄨㄢ', 'ˇ', ['暖','卵','軟','緩']),
-              ch('的', 'ㄉㄜ', '˙', ['的','得','地','德']),
-              ch('家', 'ㄐㄧㄚ', 'ˉ', ['家','加','佳','嘉'])
-            ]
+            id: 40, type: "情境會考", scope: "段考綜合素養",
+            title: "（段考情境題）班級讀書會討論「逆境中的堅持與生命選擇」，幾位同學引用段考課文發言，下列何者的見解最切合課文旨趣？",
+            options: ["子晴：「〈跳水〉啟示我們凡事只要閉上眼睛盲目跳下去，不需任何思考。」", "柏翰：「〈庭中有奇樹〉的主角因路途遙遠無法送花，便決定放棄這段情誼。」", "宇軒：「〈土芭樂的生存之道〉啟示我們：即便沒有優渥的外在條件，只要深植實力順應環境，也能走出獨一無二的生命格局。」", "恩綺：「〈慈烏夜啼〉提醒我們如果母親過世了，就要學吳起立即奔赴戰場建功立業。」"],
+            answer: "宇軒：「〈土芭樂的生存之道〉啟示我們：即便沒有優渥的外在條件，只要深植實力順應環境，也能走出獨一無二的生命格局。」",
+            explain: "宇軒深入理解了土芭樂在惡劣環境中堅韌求生、借物抒懷的正面哲思；其餘選項皆扭曲了課文核心意旨。"
           }
         ]
       }
     ];
 
-    const STORAGE_KEY = 'zhuyin_holiday_2026_progress_v2';
+    /* ==========================================================
+       遊戲狀態管理
+       ========================================================== */
+    let currentStageIndex = 0; // 0, 1, 2, 3
+    let currentQuestionIndex = 0; // 0 ~ 9
+    let stageScores = [0, 0, 0, 0];
+    let stageStars = [0, 0, 0, 0];
+    let stageLives = 3;
+    let comboCount = 0;
+    let isSoundOn = true;
+    let mistakesList = [];
+    let playerName = "國文小行者";
 
-    function createEmptyCompleted() {
-      return HOLIDAY_DATA.map(day => new Array(day.sentences.length).fill(false));
+    // 載入 LocalStorage
+    function loadSavedData() {
+      try {
+        const savedScores = localStorage.getItem("g8_stage_scores");
+        if (savedScores) stageScores = JSON.parse(savedScores);
+        const savedStars = localStorage.getItem("g8_stage_stars");
+        if (savedStars) stageStars = JSON.parse(savedStars);
+        const savedMistakes = localStorage.getItem("g8_mistakes");
+        if (savedMistakes) mistakesList = JSON.parse(savedMistakes);
+        const savedName = localStorage.getItem("g8_player_name");
+        if (savedName) playerName = savedName;
+      } catch (e) {}
+      updateMapUI();
     }
 
-    let state = {
-      currentDayIdx: 0,
-      currentSentenceIdx: 0,
-      currentCharIdx: 0,
-      buffer: { initial: '', medial: '', rime: '', tone: '' },
-      isSelectingCandidate: false,
-      currentCandidates: [],
-      showKeyHint: true,
-      completed: createEmptyCompleted(),
-      medals: [false, false, false, false]
-    };
-
-    function loadProgress() {
+    function saveGameData() {
       try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed.completed && parsed.completed.length === 4 && parsed.completed[0].length === 10) {
-            state.completed = parsed.completed;
-          }
-          if (parsed.medals && parsed.medals.length === 4) {
-            state.medals = parsed.medals;
-          }
-        }
+        localStorage.setItem("g8_stage_scores", JSON.stringify(stageScores));
+        localStorage.setItem("g8_stage_stars", JSON.stringify(stageStars));
+        localStorage.setItem("g8_mistakes", JSON.stringify(mistakesList));
+        localStorage.setItem("g8_player_name", playerName);
       } catch (e) {}
     }
 
-    function saveProgress() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          completed: state.completed,
-          medals: state.medals
-        }));
-      } catch (e) {}
-    }
-
+    /* ==========================================================
+       音效合成系統 (Web Audio API)
+       ========================================================== */
     let audioCtx = null;
-    function playToneSound(type) {
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function playTone(freq, type, duration, delay = 0) {
+      if (!isSoundOn) return;
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const now = audioCtx.currentTime;
-        if (type === 'key') {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(520, now);
-          gain.gain.setValueAtTime(0.06, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.06);
-        } else if (type === 'unlock') {
-          [587.33, 880].forEach((freq, i) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + i * 0.07);
-            gain.gain.setValueAtTime(0.09, now + i * 0.07);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.14);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now + i * 0.07);
-            osc.stop(now + i * 0.07 + 0.14);
-          });
-        } else if (type === 'correct') {
-          [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + i * 0.06);
-            gain.gain.setValueAtTime(0.1, now + i * 0.06);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.18);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now + i * 0.06);
-            osc.stop(now + i * 0.06 + 0.18);
-          });
-        } else if (type === 'wrong') {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(190, now);
-          osc.frequency.linearRampToValueAtTime(140, now + 0.2);
-          gain.gain.setValueAtTime(0.08, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.22);
-        } else if (type === 'medal') {
-          [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((freq, i) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + i * 0.09);
-            gain.gain.setValueAtTime(0.14, now + i * 0.09);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.35);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now + i * 0.09);
-            osc.stop(now + i * 0.09 + 0.35);
-          });
-        }
-      } catch (e) {}
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + delay);
+        osc.stop(audioCtx.currentTime + delay + duration);
+      } catch(e) {}
     }
 
-    function speakText(text) {
-      if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = 'zh-TW';
-      utter.rate = 0.92;
-      window.speechSynthesis.speak(utter);
-    }
-
-    function speakCurrentSentence() {
-      const sentenceObj = getCurrentSentence();
-      const fullText = sentenceObj.chars.map(c => c.char).join('');
-      speakText(fullText);
-    }
-
-    function getCurrentDay() {
-      return HOLIDAY_DATA[state.currentDayIdx];
-    }
-
-    function getCurrentSentence() {
-      return getCurrentDay().sentences[state.currentSentenceIdx];
-    }
-
-    function getCurrentCharObj() {
-      return getCurrentSentence().chars[state.currentCharIdx];
-    }
-
-    function parseTargetSlots(charObj) {
-      let initial = '', medial = '', rime = '';
-      for (const sym of charObj.phonetics) {
-        if (INITIALS.has(sym)) initial = sym;
-        else if (MEDIALS.has(sym)) medial = sym;
-        else if (RIMES.has(sym)) rime = sym;
+    function playSound(name) {
+      if (!isSoundOn) return;
+      if (name === "correct") {
+        playTone(523.25, "triangle", 0.12, 0);
+        playTone(659.25, "triangle", 0.15, 0.08);
+        playTone(783.99, "triangle", 0.25, 0.16);
+      } else if (name === "wrong") {
+        playTone(280, "sawtooth", 0.18, 0);
+        playTone(210, "sawtooth", 0.24, 0.1);
+      } else if (name === "combo") {
+        playTone(587.33, "sine", 0.1, 0);
+        playTone(880.00, "sine", 0.2, 0.08);
+      } else if (name === "stageClear") {
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((f, i) => playTone(f, "triangle", 0.25, i * 0.12));
+      } else if (name === "click") {
+        playTone(600, "sine", 0.04, 0);
       }
-      return { initial, medial, rime, tone: charObj.tone };
     }
 
-    function formatZhuyinDisplay(phonetics, tone) {
-      if (tone === '˙') return '˙' + phonetics;
-      if (tone === 'ˉ') return phonetics + 'ˉ';
-      return phonetics + tone;
+    function toggleSound() {
+      isSoundOn = !isSoundOn;
+      document.getElementById("soundIcon").innerText = isSoundOn ? "🔊" : "🔇";
+      if (isSoundOn) playSound("click");
     }
 
-    function renderKeyboard() {
-      const container = document.getElementById('keyboardRows');
-      container.innerHTML = KEYBOARD_LAYOUT.map((row, rIdx) => {
-        const paddingClass = rIdx === 1 ? 'pl-2' : rIdx === 2 ? 'pl-4' : rIdx === 3 ? 'pl-6' : '';
-        return `
-          <div class="grid grid-cols-11 gap-1.5 ${paddingClass}">
-            ${row.map(item => `
-              <button
-                data-zhuyin="${item.zhuyin}"
-                onclick="inputSymbol('${item.zhuyin}')"
-                class="zhuyin-key py-2 px-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] active:scale-95 transition flex flex-col items-center justify-center shadow-sm"
-              >
-                <span class="text-base md:text-lg font-extrabold leading-tight">${item.zhuyin}</span>
-                <span class="text-xs text-[var(--muted-foreground)] font-mono">${item.key}</span>
-              </button>
-            `).join('')}
+    /* ==========================================================
+       界面切換與更新
+       ========================================================== */
+    function goToHome() {
+      playSound("click");
+      document.getElementById("mapView").classList.remove("hidden");
+      document.getElementById("quizView").classList.add("hidden");
+      document.getElementById("resultView").classList.add("hidden");
+      updateMapUI();
+    }
+
+    function updateMapUI() {
+      const totalScore = stageScores.reduce((a, b) => a + b, 0);
+      const totalStars = stageStars.reduce((a, b) => a + b, 0);
+
+      document.getElementById("playerNameDisplay").innerText = playerName;
+      document.getElementById("totalScoreDisplay").innerText = (totalScore % 1 === 0 ? totalScore : totalScore.toFixed(1));
+      document.getElementById("totalStarsDisplay").innerText = `⭐ ${totalStars} / 12 星`;
+      document.getElementById("mistakeBadge").innerText = mistakesList.length;
+
+      for (let i = 1; i <= 4; i++) {
+        const starsCount = stageStars[i - 1];
+        let starStr = "☆☆☆";
+        if (starsCount === 3) starStr = "⭐⭐⭐";
+        else if (starsCount === 2) starStr = "⭐⭐☆";
+        else if (starsCount === 1) starStr = "⭐☆☆";
+        document.getElementById(`starL${i}`).innerText = starStr;
+      }
+    }
+
+    function editPlayerName() {
+      const newName = prompt("請輸入您的冒險者稱號（姓名）：", playerName);
+      if (newName && newName.trim()) {
+        playerName = newName.trim();
+        saveGameData();
+        updateMapUI();
+      }
+    }
+
+    /* ==========================================================
+       關卡答題流程
+       ========================================================== */
+    function startLevel(stageNum) {
+      playSound("click");
+      currentStageIndex = stageNum - 1;
+      currentQuestionIndex = 0;
+      stageLives = 3;
+      comboCount = 0;
+
+      document.getElementById("mapView").classList.add("hidden");
+      document.getElementById("resultView").classList.add("hidden");
+      document.getElementById("quizView").classList.remove("hidden");
+
+      renderQuizUI();
+    }
+
+    function renderQuizUI() {
+      const stage = STAGES_DATA[currentStageIndex];
+      const q = stage.questions[currentQuestionIndex];
+
+      // 標頭進度
+      document.getElementById("quizStageBadge").innerText = stage.name;
+      document.getElementById("qCurrentNum").innerText = currentQuestionIndex + 1;
+      document.getElementById("stageScore").innerText = stageScores[currentStageIndex];
+      document.getElementById("quizProgressBar").style.width = `${((currentQuestionIndex + 1) / stage.questions.length) * 100}%`;
+
+      // 生命值
+      let livesHtml = "";
+      for (let i = 0; i < 3; i++) {
+        livesHtml += (i < stageLives) ? "<span>❤️</span>" : "<span class='opacity-25 grayscale'>💔</span>";
+      }
+      document.getElementById("livesContainer").innerHTML = livesHtml;
+
+      // 題型與內容
+      document.getElementById("qTypeBadge").innerText = q.type;
+      document.getElementById("qScopeBadge").innerText = q.scope;
+      document.getElementById("qTitle").innerHTML = q.title;
+
+      // 重置反饋與下一題
+      document.getElementById("feedbackCard").className = "hidden";
+      document.getElementById("nextBtn").classList.add("hidden");
+
+      // 渲染選項按鈕
+      const grid = document.getElementById("optionsGrid");
+      grid.innerHTML = "";
+
+      q.options.forEach((optText, idx) => {
+        const letter = ["A", "B", "C", "D"][idx];
+        const btn = document.createElement("button");
+        btn.className = "w-full text-left p-3.5 sm:p-4 rounded-2xl border border-slate-700/80 bg-slate-800/90 hover:bg-indigo-900/40 hover:border-amber-400/60 active:scale-[0.98] transition-all flex items-center justify-between group shadow-sm";
+        btn.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-lg bg-indigo-950/80 border border-indigo-700/50 text-amber-300 font-black flex items-center justify-center text-xs group-hover:bg-amber-500 group-hover:text-slate-950 transition">
+              ${letter}
+            </span>
+            <span class="text-sm font-semibold text-slate-100 group-hover:text-amber-200 transition">
+              ${optText}
+            </span>
           </div>
+          <span class="text-xs text-indigo-400 opacity-0 group-hover:opacity-100 transition">選擇 ➔</span>
         `;
-      }).join('');
+        btn.onclick = () => selectOption(optText, btn, q);
+        grid.appendChild(btn);
+      });
     }
 
-    function renderMedalRack() {
-      const rack = document.getElementById('medalRack');
-      const countText = document.getElementById('medalCountText');
-      const earnedCount = state.medals.filter(Boolean).length;
-      countText.textContent = `${earnedCount} / 4`;
+    function selectOption(chosenText, chosenBtn, q) {
+      // 禁用所有按鈕
+      const allBtns = document.getElementById("optionsGrid").querySelectorAll("button");
+      allBtns.forEach(b => b.disabled = true);
 
-      rack.innerHTML = HOLIDAY_DATA.map((day, idx) => {
-        const earned = state.medals[idx];
-        return `
-          <button
-            onclick="selectDay(${idx})"
-            title="${day.date} ${day.medalName}"
-            class="w-8 h-8 rounded-lg border flex items-center justify-center text-base transition ${
-              earned
-                ? 'bg-amber-500/15 border-amber-400 text-amber-400'
-                : 'bg-[var(--background)] border-[var(--border)] opacity-40'
-            }"
-          >
-            ${earned ? day.medalEmoji : '🔒'}
-          </button>
-        `;
-      }).join('');
-    }
+      const isRight = (chosenText === q.answer);
+      const fbCard = document.getElementById("feedbackCard");
+      const fbTitle = document.getElementById("feedbackTitle");
+      const fbDesc = document.getElementById("feedbackExplain");
+      const fbIcon = document.getElementById("feedbackIcon");
+      const fbScore = document.getElementById("feedbackScoreTag");
+      const comboTag = document.getElementById("comboIndicator");
 
-    function renderDayTabs() {
-      const tabs = document.getElementById('dayTabs');
-      tabs.innerHTML = HOLIDAY_DATA.map((day, idx) => {
-        const isActive = idx === state.currentDayIdx;
-        const doneCount = state.completed[idx].filter(Boolean).length;
-        const totalCount = day.sentences.length;
-        const earned = state.medals[idx];
+      fbCard.classList.remove("hidden");
 
-        return `
-          <button
-            onclick="selectDay(${idx})"
-            class="py-2 px-3 rounded-xl border text-left transition flex items-center justify-between ${
-              isActive
-                ? 'bg-[var(--secondary)] border-amber-500 ring-2 ring-amber-500/30'
-                : 'bg-[var(--background)] border-[var(--border)] hover:bg-[var(--secondary)]/60'
-            }"
-          >
-            <div>
-              <div class="text-sm font-extrabold ${isActive ? 'text-amber-500' : ''}">${day.date}</div>
-              <div class="text-xs text-[var(--muted-foreground)]">${doneCount}/${totalCount} 題</div>
-            </div>
-            <span class="text-lg">${earned ? day.medalEmoji : ''}</span>
-          </button>
-        `;
-      }).join('');
-    }
+      if (isRight) {
+        playSound("correct");
+        comboCount++;
 
-    function renderToolbar() {
-      const day = getCurrentDay();
-      const dots = document.getElementById('sentenceDots');
-      dots.innerHTML = day.sentences.map((_, sIdx) => {
-        const isDone = state.completed[state.currentDayIdx][sIdx];
-        const isCurrent = sIdx === state.currentSentenceIdx;
-        return `
-          <button
-            onclick="selectSentence(${sIdx})"
-            class="w-6 h-6 rounded-lg text-xs font-bold border transition flex items-center justify-center ${
-              isCurrent
-                ? 'border-amber-500 bg-amber-500 text-black'
-                : isDone
-                ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400'
-                : 'border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]'
-            }"
-          >
-            ${isDone ? '✓' : sIdx + 1}
-          </button>
-        `;
-      }).join('');
-
-      document.getElementById('sentenceProgressLabel').textContent =
-        `第 ${state.currentSentenceIdx + 1} / ${day.sentences.length} 題`;
-
-      document.getElementById('keyHintStatus').textContent = state.showKeyHint ? '開' : '關';
-      document.getElementById('toggleKeyHintBtn').className = `px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
-        state.showKeyHint ? 'border-blue-500/50 bg-blue-500/15 text-blue-400' : 'border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]'
-      }`;
-    }
-
-    function renderSentenceBoard() {
-      const sentence = getCurrentSentence();
-
-      // 直接呈現完整目標短句，並高亮目前正在打的字
-      const fullDisplay = document.getElementById('fullSentenceDisplay');
-      fullDisplay.innerHTML = sentence.chars.map((item, idx) => {
-        const isDone = idx < state.currentCharIdx;
-        const isCurrent = idx === state.currentCharIdx;
-        if (isCurrent) {
-          return `<span class="text-amber-500 underline decoration-2 underline-offset-4 px-0.5">${item.char}</span>`;
-        }
-        if (isDone) {
-          return `<span class="text-emerald-400">${item.char}</span>`;
-        }
-        return `<span>${item.char}</span>`;
-      }).join('');
-
-      // 渲染逐字注音卡片（未完成的字隱藏國字，讓玩家透過上方完整短句對照選字）
-      const board = document.getElementById('sentenceBoard');
-      board.innerHTML = sentence.chars.map((item, idx) => {
-        if (item.isPunct) {
-          return `
-            <div class="px-1 py-2 text-2xl font-bold text-[var(--muted-foreground)] self-center">
-              ${item.char}
-            </div>
-          `;
+        // 連擊獎勵音效
+        if (comboCount >= 2) {
+          playSound("combo");
+          comboTag.innerText = `🔥 COMBO x${comboCount}`;
+          comboTag.classList.remove("hidden");
         }
 
-        const isDone = idx < state.currentCharIdx;
-        const isCurrent = idx === state.currentCharIdx;
-        const pChars = item.phonetics.split('');
-        const isLightTone = item.tone === '˙';
-        const displayTone = item.tone === 'ˉ' ? '' : item.tone;
+        fbCard.className = "rounded-2xl p-4 transition-all duration-300 space-y-1.5 animate-pop bg-emerald-950/70 border-emerald-500/50 text-emerald-200 border";
+        fbIcon.innerText = "🎉";
+        fbTitle.innerText = "修煉成功！回答正確！";
+        fbScore.className = "text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        fbScore.innerText = "+2.5 分";
+        fbDesc.innerHTML = `<strong>💡 知識錦囊：</strong>${q.explain}`;
 
-        return `
-          <div
-            onclick="jumpToChar(${idx})"
-            class="cursor-pointer rounded-xl border px-2.5 py-2 min-w-[68px] transition flex items-center justify-center gap-1.5 ${
-              isCurrent
-                ? 'bg-amber-500/15 border-2 border-amber-500 shadow-sm scale-105'
-                : isDone
-                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400'
-                : 'bg-[var(--card)] border-[var(--border)] opacity-75'
-            }"
-          >
-            <div class="text-2xl font-extrabold w-8 h-8 flex items-center justify-center rounded-lg ${
-              isDone ? '' : 'bg-[var(--background)] border border-dashed border-[var(--border)] text-sm text-amber-500'
-            }">
-              ${isDone ? item.char : (isCurrent ? '？' : '')}
-            </div>
+        chosenBtn.classList.remove("bg-slate-800/90", "border-slate-700/80");
+        chosenBtn.classList.add("bg-emerald-900/80", "border-emerald-400", "text-white");
 
-            <div class="zhuyin-box text-xs">
-              <div class="zhuyin-phonetics text-amber-500">
-                ${isLightTone ? '<span class="text-xs leading-none">˙</span>' : ''}
-                ${pChars.map(p => `<span>${p}</span>`).join('')}
-              </div>
-              ${!isLightTone && displayTone ? `<div class="zhuyin-tone text-amber-400 text-xs">${displayTone}</div>` : ''}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function renderCurrentTargetPanel() {
-      const charObj = getCurrentCharObj();
-      if (!charObj || charObj.isPunct) return;
-
-      document.getElementById('targetZhuyinBig').textContent =
-        formatZhuyinDisplay(charObj.phonetics, charObj.tone);
-
-      const { initial, medial, rime, tone } = state.buffer;
-      const hasAny = initial || medial || rime || tone;
-      const bufferBox = document.getElementById('inputBufferBox');
-
-      if (!hasAny) {
-        bufferBox.innerHTML = `<span class="text-xs text-[var(--muted-foreground)] font-normal">等待輸入</span>`;
       } else {
-        bufferBox.innerHTML = `
-          ${tone === '˙' ? `<span class="text-amber-400">${tone}</span>` : ''}
-          ${initial ? `<span class="text-rose-400">${initial}</span>` : ''}
-          ${medial ? `<span class="text-emerald-400">${medial}</span>` : ''}
-          ${rime ? `<span class="text-sky-400">${rime}</span>` : ''}
-          ${tone && tone !== '˙' ? `<span class="text-amber-400">${tone}</span>` : ''}
-        `;
-      }
+        playSound("wrong");
+        comboCount = 0;
+        comboTag.classList.add("hidden");
+        stageLives = Math.max(0, stageLives - 1);
 
-      const candContainer = document.getElementById('candidateContainer');
-      if (!state.isSelectingCandidate) {
-        candContainer.innerHTML = [1, 2, 3, 4].map(num => `
-          <button disabled class="py-2 px-2 rounded-xl border border-[var(--border)] bg-[var(--card)] opacity-35 flex items-center justify-center gap-1.5">
-            <span class="text-xs text-[var(--muted-foreground)] font-mono">${num}.</span>
-            <span class="text-xl font-bold">？</span>
-          </button>
-        `).join('');
-      } else {
-        candContainer.innerHTML = state.currentCandidates.map((candChar, idx) => `
-          <button
-            onclick="selectCandidate(${idx})"
-            class="py-2 px-2 rounded-xl border-2 border-amber-500 bg-[var(--card)] hover:bg-amber-500/20 active:scale-95 transition flex items-center justify-center gap-1.5 shadow-sm animate-pop"
-          >
-            <span class="text-xs text-amber-400 font-mono font-bold">${idx + 1}.</span>
-            <span class="text-2xl font-extrabold">${candChar}</span>
-          </button>
-        `).join('');
-      }
+        // 記錄至錯題本
+        if (!mistakesList.some(m => m.id === q.id)) {
+          mistakesList.push({
+            id: q.id,
+            stageName: STAGES_DATA[currentStageIndex].name,
+            title: q.title,
+            wrongAnswer: chosenText,
+            correctAnswer: q.answer,
+            explain: q.explain
+          });
+          saveGameData();
+          document.getElementById("mistakeBadge").innerText = mistakesList.length;
+        }
 
-      updateKeyboardHighlights();
-    }
+        fbCard.className = "rounded-2xl p-4 transition-all duration-300 space-y-1.5 animate-pop bg-rose-950/70 border-rose-500/50 text-rose-200 border";
+        fbIcon.innerText = "💔";
+        fbTitle.innerText = "差一點點！已記錄至錯題本。";
+        fbScore.className = "text-xs font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30";
+        fbScore.innerText = "正確答案：【" + q.answer + "】";
+        fbDesc.innerHTML = `<strong>💡 詳解釐清：</strong>${q.explain}`;
 
-    function updateKeyboardHighlights() {
-      const allKeys = document.querySelectorAll('.zhuyin-key');
-      allKeys.forEach(btn => btn.classList.remove('key-hint-glow'));
+        chosenBtn.classList.add("bg-rose-950/60", "border-rose-500/70");
 
-      if (!state.showKeyHint || state.isSelectingCandidate) return;
-
-      const charObj = getCurrentCharObj();
-      if (!charObj || charObj.isPunct) return;
-
-      const target = parseTargetSlots(charObj);
-      let nextNeeded = '';
-      if (target.initial && state.buffer.initial !== target.initial) nextNeeded = target.initial;
-      else if (target.medial && state.buffer.medial !== target.medial) nextNeeded = target.medial;
-      else if (target.rime && state.buffer.rime !== target.rime) nextNeeded = target.rime;
-      else if (target.tone && state.buffer.tone !== target.tone) nextNeeded = target.tone;
-
-      if (nextNeeded) {
-        allKeys.forEach(btn => {
-          if (btn.getAttribute('data-zhuyin') === nextNeeded) {
-            btn.classList.add('key-hint-glow');
+        // 標出正確按鈕
+        allBtns.forEach(b => {
+          if (b.innerText.includes(q.answer)) {
+            b.classList.add("border-emerald-400", "bg-emerald-950/50");
           }
         });
       }
+
+      // 顯示下一題按鈕
+      const nextBtn = document.getElementById("nextBtn");
+      nextBtn.classList.remove("hidden");
+      const isLast = (currentQuestionIndex === STAGES_DATA[currentStageIndex].questions.length - 1);
+      document.getElementById("nextBtnText").innerText = isLast ? "結算本關戰果 🏆" : "下一題 ➜";
     }
 
-    function renderAll() {
-      renderMedalRack();
-      renderDayTabs();
-      renderToolbar();
-      renderSentenceBoard();
-      renderCurrentTargetPanel();
-    }
+    function nextQuestion() {
+      playSound("click");
+      const stage = STAGES_DATA[currentStageIndex];
 
-    function inputSymbol(sym) {
-      if (state.isSelectingCandidate) return;
-
-      const charObj = getCurrentCharObj();
-      if (!charObj || charObj.isPunct) return;
-
-      playToneSound('key');
-
-      if (INITIALS.has(sym)) {
-        state.buffer.initial = sym;
-      } else if (MEDIALS.has(sym)) {
-        state.buffer.medial = sym;
-      } else if (RIMES.has(sym)) {
-        state.buffer.rime = sym;
-      } else if (TONES.has(sym)) {
-        state.buffer.tone = sym;
-      }
-
-      renderCurrentTargetPanel();
-
-      if (TONES.has(sym)) {
-        verifyZhuyinBuffer();
+      if (currentQuestionIndex < stage.questions.length - 1) {
+        currentQuestionIndex++;
+        renderQuizUI();
       } else {
-        setFeedback('請繼續輸入注音或聲調', 'normal');
+        finishStage();
       }
     }
 
-    function verifyZhuyinBuffer() {
-      const charObj = getCurrentCharObj();
-      const target = parseTargetSlots(charObj);
-      const b = state.buffer;
+    /* ==========================================================
+       關卡結算與成就
+       ========================================================== */
+    function finishStage() {
+      playSound("stageClear");
+      triggerConfetti();
 
-      const isMatch =
-        b.initial === target.initial &&
-        b.medial === target.medial &&
-        b.rime === target.rime &&
-        b.tone === target.tone;
+      document.getElementById("quizView").classList.add("hidden");
+      const resView = document.getElementById("resultView");
+      resView.classList.remove("hidden");
 
-      if (isMatch) {
-        playToneSound('unlock');
-        state.isSelectingCandidate = true;
-        const shuffled = [...charObj.options];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        state.currentCandidates = shuffled;
-        setFeedback('✨ 請對照上方短句，選出正確的字（1~4）', 'success');
-        renderCurrentTargetPanel();
+      // 計算本關答對題數 (10題扣除本關新增的錯題或根據lives計算)
+      // 這裡直接計算：滿分25分，每道錯題扣2.5
+      const stage = STAGES_DATA[currentStageIndex];
+      const stageQIds = stage.questions.map(q => q.id);
+      const wrongCountInThisStage = mistakesList.filter(m => stageQIds.includes(m.id)).length;
+      const correctCount = Math.max(0, stage.questions.length - wrongCountInThisStage);
+      const earnedScore = correctCount * 2.5;
+
+      stageScores[currentStageIndex] = Math.max(stageScores[currentStageIndex], earnedScore);
+
+      // 星級判定
+      let stars = 1;
+      if (earnedScore >= 25) stars = 3;
+      else if (earnedScore >= 17.5) stars = 2;
+      stageStars[currentStageIndex] = Math.max(stageStars[currentStageIndex], stars);
+
+      saveGameData();
+
+      // 更新結算畫面
+      document.getElementById("resultTitle").innerText = `🎉 Day ${currentStageIndex + 1} 修煉達成！`;
+      document.getElementById("resultSubtitle").innerText = `完成「${stage.name}」全部試煉！`;
+      document.getElementById("resScore").innerText = `${earnedScore} / 25`;
+      document.getElementById("resStars").innerText = (stars === 3 ? "⭐⭐⭐" : stars === 2 ? "⭐⭐☆" : "⭐☆☆");
+      document.getElementById("resAccuracy").innerText = `${Math.round((correctCount / stage.questions.length) * 100)}%`;
+
+      const nextLevelBtn = document.getElementById("nextLevelBtn");
+      if (currentStageIndex < 3) {
+        nextLevelBtn.classList.remove("hidden");
+        nextLevelBtn.innerText = `前往 Day ${currentStageIndex + 2} 任務 ➔`;
       } else {
-        playToneSound('wrong');
-        let wrongParts = [];
-        if (b.initial !== target.initial) wrongParts.push(`聲母「${target.initial || '無'}」`);
-        if (b.medial !== target.medial) wrongParts.push(`介音「${target.medial || '無'}」`);
-        if (b.rime !== target.rime) wrongParts.push(`韻母「${target.rime || '無'}」`);
-        if (b.tone !== target.tone) wrongParts.push(`聲調「${target.tone}」`);
-
-        setFeedback(`❌ 請檢查：${wrongParts.join('、')}`, 'error');
-        const box = document.getElementById('inputBufferBox');
-        box.classList.remove('animate-shake');
-        void box.offsetWidth;
-        box.classList.add('animate-shake');
-        state.buffer.tone = '';
-        setTimeout(() => renderCurrentTargetPanel(), 300);
+        nextLevelBtn.classList.remove("hidden");
+        nextLevelBtn.innerText = "🎓 頒發段考封神狀 ➔";
+        nextLevelBtn.onclick = openCertificateModal;
       }
     }
 
-    function selectCandidate(index) {
-      if (!state.isSelectingCandidate) return;
-      const chosen = state.currentCandidates[index];
-      if (!chosen) return;
+    function retryCurrentLevel() {
+      startLevel(currentStageIndex + 1);
+    }
 
-      const charObj = getCurrentCharObj();
-      if (chosen === charObj.char) {
-        playToneSound('correct');
-        speakText(charObj.char);
-        setFeedback(`🎉 正確！「${charObj.char}」`, 'success');
-        advanceToNextChar();
+    function goToNextLevel() {
+      if (currentStageIndex < 3) {
+        startLevel(currentStageIndex + 2);
       } else {
-        playToneSound('wrong');
-        setFeedback(`🤔 不是「${chosen}」喔，請對照上方目標短句再選一次！`, 'error');
+        openCertificateModal();
       }
     }
 
-    function advanceToNextChar() {
-      const sentence = getCurrentSentence();
-      state.buffer = { initial: '', medial: '', rime: '', tone: '' };
-      state.isSelectingCandidate = false;
-      state.currentCandidates = [];
-
-      let nextIdx = state.currentCharIdx + 1;
-      while (nextIdx < sentence.chars.length && sentence.chars[nextIdx].isPunct) {
-        nextIdx++;
-      }
-
-      if (nextIdx < sentence.chars.length) {
-        state.currentCharIdx = nextIdx;
-        renderAll();
-      } else {
-        state.currentCharIdx = sentence.chars.length;
-        renderSentenceBoard();
-        handleSentenceComplete();
-      }
+    /* ==========================================================
+       錯題本與榮譽證書浮層
+       ========================================================== */
+    function openMistakesModal() {
+      playSound("click");
+      document.getElementById("mistakesModal").classList.remove("hidden");
+      renderMistakesUI();
+    }
+    function closeMistakesModal() {
+      playSound("click");
+      document.getElementById("mistakesModal").classList.add("hidden");
     }
 
-    function handleSentenceComplete() {
-      const dIdx = state.currentDayIdx;
-      const sIdx = state.currentSentenceIdx;
-      state.completed[dIdx][sIdx] = true;
+    function renderMistakesUI() {
+      const container = document.getElementById("mistakesList");
+      container.innerHTML = "";
 
-      const allDoneToday = state.completed[dIdx].every(Boolean);
-      const wasMedalEarned = state.medals[dIdx];
-      if (allDoneToday) {
-        state.medals[dIdx] = true;
-      }
-      saveProgress();
-      renderAll();
-
-      setTimeout(() => speakCurrentSentence(), 250);
-
-      if (allDoneToday && !wasMedalEarned) {
-        setTimeout(() => showMedalModal(dIdx), 700);
-      } else {
-        setFeedback('🎊 完成本句！即將進入下一題...', 'success');
-        setTimeout(() => {
-          const nextIncomplete = state.completed[dIdx].findIndex(done => !done);
-          if (nextIncomplete !== -1) {
-            selectSentence(nextIncomplete);
-          } else if (sIdx + 1 < getCurrentDay().sentences.length) {
-            selectSentence(sIdx + 1);
-          } else {
-            selectSentence(0);
-          }
-        }, 1400);
-      }
-    }
-
-    function setFeedback(msg, type) {
-      const banner = document.getElementById('feedbackBanner');
-      banner.textContent = msg;
-      if (type === 'success') {
-        banner.className = 'text-xs font-semibold text-center py-1 px-2 rounded-lg bg-emerald-500/15 text-emerald-400';
-      } else if (type === 'error') {
-        banner.className = 'text-xs font-semibold text-center py-1 px-2 rounded-lg bg-rose-500/15 text-rose-400';
-      } else {
-        banner.className = 'text-xs font-medium text-center py-1 px-2 rounded-lg bg-[var(--card)] text-[var(--muted-foreground)]';
-      }
-    }
-
-    function handleBackspace() {
-      if (state.isSelectingCandidate) {
-        state.isSelectingCandidate = false;
-        state.buffer.tone = '';
-        renderCurrentTargetPanel();
+      if (mistakesList.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 text-slate-400 space-y-2">
+            <span class="text-4xl block">✨</span>
+            <p class="font-bold text-slate-300">目前沒有任何錯題！</p>
+            <p class="text-xs">你的實力深不可測，請繼續保持！</p>
+          </div>
+        `;
         return;
       }
-      const b = state.buffer;
-      if (b.tone) b.tone = '';
-      else if (b.rime) b.rime = '';
-      else if (b.medial) b.medial = '';
-      else if (b.initial) b.initial = '';
-      renderCurrentTargetPanel();
+
+      mistakesList.forEach((m, idx) => {
+        const card = document.createElement("div");
+        card.className = "bg-slate-800/80 border border-rose-500/30 rounded-2xl p-4 space-y-2";
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">第 ${idx + 1} 題 · ${m.stageName}</span>
+            <button onclick="removeMistake(${m.id})" class="text-xs text-slate-400 hover:text-emerald-400 font-bold" title="我學會了，移出錯題本">✔ 已弄懂</button>
+          </div>
+          <p class="font-bold text-slate-100 text-xs sm:text-sm leading-snug">${m.title}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/50">
+            <p><span class="text-rose-400 font-bold">你的選擇：</span>${m.wrongAnswer}</p>
+            <p><span class="text-emerald-400 font-bold">正確解答：</span>${m.correctAnswer}</p>
+          </div>
+          <p class="text-xs text-amber-200/90 pt-1"><strong>💡 解析：</strong>${m.explain}</p>
+        `;
+        container.appendChild(card);
+      });
     }
 
-    function clearInputBuffer() {
-      state.buffer = { initial: '', medial: '', rime: '', tone: '' };
-      state.isSelectingCandidate = false;
-      renderCurrentTargetPanel();
-      setFeedback('請輸入注音與聲調', 'normal');
+    function removeMistake(qid) {
+      mistakesList = mistakesList.filter(m => m.id !== qid);
+      saveGameData();
+      renderMistakesUI();
+      document.getElementById("mistakeBadge").innerText = mistakesList.length;
     }
 
-    function toggleKeyHint() {
-      state.showKeyHint = !state.showKeyHint;
-      renderToolbar();
-      updateKeyboardHighlights();
-    }
-
-    function selectDay(dayIdx) {
-      state.currentDayIdx = dayIdx;
-      const firstIncomplete = state.completed[dayIdx].findIndex(done => !done);
-      state.currentSentenceIdx = firstIncomplete !== -1 ? firstIncomplete : 0;
-      resetCharPointer();
-      renderAll();
-    }
-
-    function selectSentence(sIdx) {
-      state.currentSentenceIdx = sIdx;
-      resetCharPointer();
-      renderAll();
-    }
-
-    function prevSentence() {
-      const total = getCurrentDay().sentences.length;
-      selectSentence((state.currentSentenceIdx - 1 + total) % total);
-    }
-
-    function nextSentence() {
-      const total = getCurrentDay().sentences.length;
-      selectSentence((state.currentSentenceIdx + 1) % total);
-    }
-
-    function jumpToChar(charIdx) {
-      const sentence = getCurrentSentence();
-      if (sentence.chars[charIdx].isPunct) return;
-      state.currentCharIdx = charIdx;
-      state.buffer = { initial: '', medial: '', rime: '', tone: '' };
-      state.isSelectingCandidate = false;
-      renderAll();
-    }
-
-    function resetCharPointer() {
-      state.currentCharIdx = 0;
-      state.buffer = { initial: '', medial: '', rime: '', tone: '' };
-      state.isSelectingCandidate = false;
-      state.currentCandidates = [];
-      setFeedback('請輸入注音與聲調', 'normal');
-    }
-
-    function showMedalModal(dayIdx) {
-      playToneSound('medal');
-      const day = HOLIDAY_DATA[dayIdx];
-      document.getElementById('modalMedalIcon').textContent = day.medalEmoji;
-      document.getElementById('modalDayBadge').textContent = `${day.date} 任務完成`;
-      document.getElementById('modalTitle').textContent = `獲得「${day.medalName}」！`;
-      document.getElementById('modalDesc').textContent = `太棒了！你已完成 ${day.date} 全部 10 題練習！`;
-
-      const allEarned = state.medals.every(Boolean);
-      const banner = document.getElementById('allMedalsBanner');
-      if (allEarned) {
-        banner.classList.remove('hidden');
-      } else {
-        banner.classList.add('hidden');
+    function clearMistakes() {
+      if (confirm("確定要清空所有錯題筆記嗎？")) {
+        mistakesList = [];
+        saveGameData();
+        renderMistakesUI();
+        document.getElementById("mistakeBadge").innerText = 0;
       }
-
-      const modal = document.getElementById('medalModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
     }
 
-    function closeMedalModal() {
-      const modal = document.getElementById('medalModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-      selectSentence(0);
+    function openCertificateModal() {
+      playSound("stageClear");
+      triggerConfetti();
+
+      const totalScore = stageScores.reduce((a, b) => a + b, 0);
+      document.getElementById("certStudentName").innerText = playerName;
+      document.getElementById("certScoreTag").innerText = `${(totalScore % 1 === 0 ? totalScore : totalScore.toFixed(1))} / 100 分`;
+      
+      const now = new Date();
+      document.getElementById("certDate").innerText = `頒發日期：${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+
+      document.getElementById("certModal").classList.remove("hidden");
     }
 
-    function goToNextDayFromModal() {
-      closeMedalModal();
-      const nextDay = (state.currentDayIdx + 1) % HOLIDAY_DATA.length;
-      selectDay(nextDay);
+    function closeCertificateModal() {
+      playSound("click");
+      document.getElementById("certModal").classList.add("hidden");
     }
 
     function resetAllProgress() {
-      if (!confirm('確定要重置所有練習紀錄嗎？')) return;
-      state.completed = createEmptyCompleted();
-      state.medals = [false, false, false, false];
-      saveProgress();
-      selectDay(0);
+      if (confirm("確定要重置所有關卡分數與星級紀錄嗎？")) {
+        stageScores = [0, 0, 0, 0];
+        stageStars = [0, 0, 0, 0];
+        mistakesList = [];
+        saveGameData();
+        updateMapUI();
+      }
     }
 
-    window.addEventListener('keydown', (e) => {
-      if (e.ctrlKey || e.altKey || e.metaKey) return;
+    // 彩花慶祝效果
+    function triggerConfetti() {
+      const colors = ["#f59e0b", "#fbbf24", "#38bdf8", "#a855f7", "#34d399", "#f43f5e"];
+      for (let i = 0; i < 60; i++) {
+        const conf = document.createElement("div");
+        conf.className = "confetti";
+        conf.style.left = Math.random() * 100 + "vw";
+        conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        conf.style.animationDuration = (2 + Math.random() * 2) + "s";
+        conf.style.animationDelay = (Math.random() * 0.5) + "s";
+        document.body.appendChild(conf);
+        setTimeout(() => conf.remove(), 4000);
+      }
+    }
 
-      if (state.isSelectingCandidate) {
-        if (['1', '2', '3', '4'].includes(e.key)) {
-          e.preventDefault();
-          selectCandidate(parseInt(e.key, 10) - 1);
-          return;
-        }
-        if (e.key === 'Backspace' || e.key === 'Escape') {
-          e.preventDefault();
-          handleBackspace();
-          return;
-        }
-        return;
-      }
-
-      if (e.key === 'Backspace') {
-        e.preventDefault();
-        handleBackspace();
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        clearInputBuffer();
-        return;
-      }
-
-      const lowerKey = e.key.toLowerCase();
-      if (KEY_TO_ZHUYIN[lowerKey]) {
-        e.preventDefault();
-        inputSymbol(KEY_TO_ZHUYIN[lowerKey]);
-      }
+    // 初始化啟動
+    window.addEventListener("DOMContentLoaded", () => {
+      loadSavedData();
     });
-
-    loadProgress();
-    renderKeyboard();
-    renderAll();
   </script>
 </body>
 </html>
